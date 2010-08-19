@@ -1,0 +1,252 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf320
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww17020\viewh17120\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\f0\b\fs32 \cf0 Installation and Setup of the Mind Cupola's Audio System
+\b0\fs24 \
+\
+Author: Hanns Holger Rutz\
+Last Modification Date: 19-Aug-10\
+\
+
+\b\fs28 1  Software: First Installation
+\b0\fs24 \
+\
+This section describes how to install the system on a fresh computer. The pre-requisites are:\
+\
+- a rather recent MacIntosh computer (Intel Core or Core2 Duo 2 GHz or better) running OS X 10.6 (might work on 10.5)\
+- note: it is generally possible to run the installation on a Linux computer, but we describe the OS X process here\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li160\fi-160\ql\qnatural\pardirnatural
+\cf0 - java 1.6 : on OS X, this is already installed. On OS X you might need to change the default java VM from 1.5 to 1.6 (this is possible in the /Applications/Utilities/Java Preferences tool by dragging "Java SE 6" to the top of the list in the Java Applications section)\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 - a stereo audio interface (typically the built-in of the Mac)\
+\
+The build all the software from scratch, we need to install Scala 2.8, the language in which all components are written,\
+as well as sbt - the simple build tool - which is the tool that compiles and publishes the sources.\
+\
+
+\b\fs22 ( 1.1  Scala )
+\b0\fs20 \
+\
+I am not 100% sure that Scala needs to be explicitly installed, as sbt does that job probably for you. But just in case:\
+Download Scala 2.8.0.final from \
+\
+{\field{\*\fldinst{HYPERLINK "http://www.scala-lang.org/downloads"}}{\fldrslt http://www.scala-lang.org/downloads}}\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 - the direct link for OS X is:\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+{\field{\*\fldinst{HYPERLINK "http://www.scala-lang.org/downloads/distrib/files/scala-2.8.0.final.tgz"}}{\fldrslt \cf0 http://www.scala-lang.org/downloads/distrib/files/scala-2.8.0.final.tgz}}\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 \
+Move the up-zipped folder scala-2.8.0 into ~/Documents/devel
+\fs24 \
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b\fs26 \cf0 1.2  Git\
+\
+
+\b0\fs24 The Cupola software is maintained using the Git software versioning system. You will need to install a Git cient on the computer. Download and install git 1.7.2 from:\
+\
+{\field{\*\fldinst{HYPERLINK "http://code.google.com/p/git-osx-installer/downloads"}}{\fldrslt http://code.google.com/p/git-osx-installer/downloads}}\
+- the direct link:\
+{\field{\*\fldinst{HYPERLINK "http://code.google.com/p/git-osx-installer/downloads/detail?name=git-1.7.2-intel-leopard.dmg"}}{\fldrslt http://code.google.com/p/git-osx-installer/downloads/detail?name=git-1.7.2-intel-leopard.dmg}}\
+\
+Mount (double-click) t he DMG, double click on the installer .pkg and complete the installation. In a terminal, you should be able to launch git afterwards:\
+\
+$ git --version\
+git version 1.7.2\
+\
+
+\b\fs26 1.3  The libraries and actual Cupola software\
+\
+
+\b0\fs24 Since there is currently no maven repository, we need to install all the libraries before the actual cupola software. All components are hosted on github, the master being at http://github.com/Sciss, and the cupola account's fork at http://github.com/Cupola. For each package, you can either clone anonymously:\
+\
+$ git clone http://github.com/Cupola/Cupola.git\
+\
+or as the Cupola user account\
+\
+$ git clone https://Cupola@github.com/Cupola/Cupola.git\
+\
+(note from the UoP network, you need to use Git over HTTP because otherwise Git gets blocked somehow, that is why in the above line we use https://)\
+\
+We will install all packages into ~/Documents/devel:\
+\
+$ mkdir ~/Documents/devel\
+\
+The following need to be installed in this order:\
+\
+{\field{\*\fldinst{HYPERLINK "http://github.com/Cupola/ScalaAudioFile"}}{\fldrslt http://github.com/Cupola/ScalaAudioFile}}\
+{\field{\*\fldinst{HYPERLINK "http://github.com/Cupola/ScalaOSC"}}{\fldrslt http://github.com/Cupola/ScalaOSC}}\
+{\field{\*\fldinst{HYPERLINK "http://github.com/Cupola/ScalaCollider"}}{\fldrslt http://github.com/Cupola/ScalaCollider}}\
+{\field{\*\fldinst{HYPERLINK "http://github.com/Cupola/ScalaInterpreterPane"}}{\fldrslt http://github.com/Cupola/ScalaInterpreterPane}}\
+{\field{\*\fldinst{HYPERLINK "http://github.com/Cupola/ScalaColliderSwing"}}{\fldrslt http://github.com/Cupola/ScalaColliderSwing}}\
+{\field{\*\fldinst{HYPERLINK "http://github.com/Cupola/SoundProcesses"}}{\fldrslt http://github.com/Cupola/SoundProcesses}}\
+{\field{\*\fldinst{HYPERLINK "http://github.com/Cupola/Wolkenpumpe"}}{\fldrslt http://github.com/Cupola/Wolkenpumpe}}\
+{\field{\*\fldinst{HYPERLINK "http://github.com/Cupola/Cupola"}}{\fldrslt http://github.com/Cupola/Cupola}}\
+\
+The procedure for all is identical, so we demonstrate this with ScalaAudioFile:\
+\
+$ cd ~/Documents/devel\
+$ git clone https://Cupola@github.com/ScalaAudioFile/ScalaAudioFile.,\
+$ git remote add upstream http://github.com/Sciss/ScalaAudioFile.git\
+$ git fetch upstream\
+$ git pull upstream master\
+\
+the last three lines make sure we can later update changes pushed to the master at github.com/Sciss. when using the anonymous cloning, you cannot install these update hooks and must leave these commands out.  Execute the above steps for each of the packages.\
+
+\b\fs26 \
+1.4  Simple Build Tool\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b0\fs24 \cf0 \
+The Simple Build Tool (sbt) is used to update, compile and package the software from source-code. You can just grab the latest (currently 0.7.4) from here\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+{\field{\*\fldinst{HYPERLINK "http://code.google.com/p/simple-build-tool/downloads"}}{\fldrslt \cf0 http://code.google.com/p/simple-build-tool/downloads}}\
+- the direct link:\
+{\field{\*\fldinst{HYPERLINK "http://code.google.com/p/simple-build-tool/downloads/detail?name=sbt-launch-0.7.4.jar"}}{\fldrslt http://code.google.com/p/simple-build-tool/downloads/detail?name=sbt-launch-0.7.4.jar}}\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 \
+Create a new empty folder ~/Documents/devel/sbt:\
+$ mkdir ~/Documents/devel/sbt\
+\
+and move the downloaded .jar file there.\
+Next make sure you can easily execute sbt from the terminal. The best way to achieve this is to have a shell script named "sbt" which will execute java with this jar. Such a script is included in Cupola software repository (see below) inside the "notes" folder. So after you cloned the Cupola.git, you can copy this file into ~/Documents/devel/sbt and add a symbolic link to it.\
+\
+$ cp ~/Documents/devel/Cupola/notes/sbt ~/Documents/devel/sbt/\
+$ sudo ln -s /usr/local/bin/sbt ~/Documents/devel/sbt/sbt\
+$ chmod u+x ~/Documents/devel/sbt/sbt\
+\
+Make sure that /usr/local/bin is in the bash PATH.\
+\
+$ touch ~/.bash_profile\
+$ vi ~/.bash_profile\
+\
+look for a line similar to\
+\
+export PATH=$PATH:/usr/local/bin\
+\
+and if that doesn't exist or the file is empty, add it and save the file. (to start editing in vi, press "a". after you entered the line, press escape, then type ":wq" and hit return.\
+\
+open a new terminal, now just typing "sbt" should work and launch sbt. (it will ask "Project does not exist, create new project? (y/N/s)", just quit by hitting return).\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b\fs26 \cf0 1.5  Compiling\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b0\fs24 \cf0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 The last step is to compile all the packes. Again this needs to be done in order:\
+\
+ScalaAudioFile -> ScalaOSC -> ScalaCollider -> ScalaInterpreterPane -> ScalaColliderSwing -> SoundProcesses -> Cupola.\
+\
+For each except the last (Cupola), the steps are identical, so again we show the example of ScalaAudioFile\
+\
+$ cd ~/Documents/devel/ScalaAudioFile\
+$ sbt update publish-local\
+\
+The last line will make sure all dependancies of the particular package are updated, then compile and install the package on the local computer.\
+\
+the procedure for the last package (Cupola) is:\
+\
+$ sbt update package-app\
+\
+This updates the double-clickable Cupola.app.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b\fs26 \cf0 1.6  SuperCollider\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b0\fs24 \cf0 \
+SuperCollider is the audio synthesis server used for the project. Due to its active development and continuous bug-fixes, we need a very recent version built directly from the SVN repository, as described here: {\field{\*\fldinst{HYPERLINK "http://supercollider.sourceforge.net/developers/"}}{\fldrslt http://supercollider.sourceforge.net/developers/}}\
+\
+Since building from source requires (on OS X) to install the full XCode developer tools from Apple, you should probably just grab a pre-compiled binary from HH's computer.\
+\
+Make sure SuperCollider is found in ~/Documents/devel/SuperCollider3, so that the sound server is located exactly at ~/Documents/devel/SuperCollider3/common/build/scsynth . You can choose another location, but then you will need to change the cupola-settings.xml (see below).\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b\fs26 \cf0 1.7  Sound material\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b0\fs24 \cf0 \
+The sound file material is too large to keep in an online repository. So this needs to be copied directly from HH's computer. The folder should be located at ~/Desktop, such that there is ~/Desktop/Cupola/audio_work/material in which you have the sound files.\
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b\fs28 \cf0 2  Running
+\b0\fs24 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 In the final version, the OSC server is a separate program that needs to run all the time before starting the Eye-Tracker. this tool called CupolaRelais will be updated and described once the sensor data is ok. For now just forget about it, and directly start the Cupola.app.\
+\
+The Cupola.app is started simply by double-clicking on its icon. Should you encounter any problems, hanging, no sound, etc, just quit the app (Force-quit if unresponsive), and make sure the sound synthesis server is down as well:\
+\
+$ killall scsynth\
+\
+Then try again to launch by double-clicking. Currently, you can start the sound by feeding a simulation of the current stage value into the system. This is done with the little horizontal slider in the bottom left of the screen (slider leftmost = meditation ; slider rightmost = chaos). The main volume is controlled with the vertical slider on the right-side of the main window (the window that shows the animation of the sound-processes popping up and disappearing).\
+\
+\
+
+\b\fs28 3  Known Issues
+\b0\fs24 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b\fs26 \cf0 3.1  Sample-rate mismatch\
+
+\fs28 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b0\fs24 \cf0 On fresh systems, it seems that the Mac OS X internal audio interface sometimes runs at different sample rates for audio input and output. This will result in the following message in the messages window of the cupola app:\
+\
+"input and output sample rates do not match. 48000 != 44100\
+could not initialize audio.\
+scsynth terminated (1)"\
+\
+In this case, quit the Cupola.app, open a terminal, and do\
+\
+$ cd ~/Documents/devel/SuperCollider3/common/build\
+$ killall scsynth\
+$ ./scsynth -S 44100 -u 44444\
+\
+When you see "SuperCollider 3 server ready", hit Ctrl+C to stop the server again. The sample-rate is now properly set. Restart the Cupla.app.\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b\fs26 \cf0 3.2  Wrong locations of sound and SuperCollider\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b0\fs24 \cf0 \
+If you adher to the installation locations as outlined above, there shouldn't be any problems. However, you may decide to move SuperCollider and the Cupola audio folder to other locations. In that case, you need to open cupola-settings.xml with a text editor and adjust the locations in there so that the Cupola software properly finds the new places. After editing and saving the XML file, quit and re-start the Cupola.app.\
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b\fs28 \cf0 3  Software updates
+\b0\fs24 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 \
+Basically, when there are changes in the master, you should update affected each package, again in the order as shown before. For instance, for ScalaAudioFile (most unlikely to change during the course of the project, though):\
+\
+$ cd ~/Documents/devel/ScalaAudioFile\
+$ git pull upstream master\
+$ sbt update publish-local\
+\
+With the difference again for Cupola that here you use instead\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+\cf0 $ sbt update package-app\
+\
+New sound files, if any, must be copied directly from HH's harddisk.\
+}
