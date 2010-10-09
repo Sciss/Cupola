@@ -5,7 +5,7 @@ import sbt.{ FileUtilities => FU, _}
  *    @version 0.12, 18-Aug-10
  */
 class CupolaProject( info: ProjectInfo ) extends ProguardProject( info ) {
-   val wolkenpumpe   = "de.sciss" %% "wolkenpumpe" % "0.17"
+   val wolkenpumpe   = "de.sciss" %% "wolkenpumpe" % "0.20"
 
    // for some reason, snapshot release are not propagated properly through
    // the dependancies, we need to explicitly repeat them (or their repos) here...
