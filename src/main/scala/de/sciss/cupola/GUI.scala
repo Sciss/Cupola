@@ -29,36 +29,33 @@
 package de.sciss.cupola
 
 import Cupola._
-import java.awt.{ BorderLayout, Color, Dimension, Graphics, GridLayout }
 import actors.Actor
 import collection.breakOut
 import de.sciss.osc.OSCMessage
 import de.sciss.synth.proc.ProcTxn
 import javax.swing._
-import event.{MouseInputAdapter, ChangeEvent, ChangeListener}
+import javax.swing.event.{MouseInputAdapter, ChangeEvent, ChangeListener}
 import java.awt.event._
+import java.awt._
 
 /**
- *    @version 0.10, 01-Aug-10
+ *    @version 0.13, 09-Oct-10
  */
 class GUI extends Cupola.Listener {
    gui =>
 
    private var valid = false
-//   private var selectedCell: Option[ Cell ] = None
-//   private val levelPane = new JPanel( new GridLayout( Level.all.size, Section.all.size ))
-//   private val map = Map[ (Level, Section), Cell ]( Level.all.flatMap( lvl => {
-//      Section.all.map( sec => {
-//         val gg = new Cell
-//         gg.addMouseListener( new MouseAdapter {
-//            override def mousePressed( e: MouseEvent ) {
-//               if( valid ) Cupola.simulate( OSCMessage( "/cupola", "state", lvl.id, sec.id ))
-//            }
-//         })
-//         levelPane.add( gg )
-//         (lvl, sec) -> gg
-//      })
-//   }): _* )
+
+   private var selectedBut: StageButton = _
+   private val ggIdle     = makeButton( IdleStage )
+   private val ggCalib    = makeButton( CalibStage )
+   private val ggHidden   = makeButton( HiddenStage )
+   private val ggMedit    = makeButton( MeditStage )
+   private val ggChaos    = makeButton( ChaosStage )
+   private val ggEqui     = makeButton( EquiStage )
+   private val ggLimbo    = makeButton( LimboStage )
+   private val ggFinal    = makeButton( FinalStage )
+
    val ggLevel = new JComponent {
       private var scaleVar = 0.0
       def scale = scaleVar
@@ -142,17 +139,60 @@ class GUI extends Cupola.Listener {
             Cupola.quit
          }
       })
+
+      val yBox = Box.createVerticalBox()
+      ggFinal.setAlignmentX( 0.5f )
+      yBox.add( ggFinal )
+      ggLimbo.setAlignmentX( 0.5f )
+      yBox.add( ggLimbo )
+      val xBox = Box.createHorizontalBox()
+      xBox.add( ggMedit )
+      xBox.add( ggEqui )
+      xBox.add( ggChaos )
+      xBox.setAlignmentX( 0.5f )
+      yBox.add( xBox )
+      ggHidden.setAlignmentX( 0.5f )
+      yBox.add( ggHidden )
+      ggCalib.setAlignmentX( 0.5f )
+      yBox.add( ggCalib )
+      ggIdle.setAlignmentX( 0.5f )
+      yBox.add( ggIdle )
+
+ggIdle.setBackground( Color.white )
+ggIdle.setForeground( Color.black )
+
+
 //      cp.add( levelPane, BorderLayout.CENTER )
-      cp.add( ggLevel, BorderLayout.CENTER )
+//      cp.add( ggLevel, BorderLayout.CENTER )
+      cp.add( yBox, BorderLayout.CENTER )
       val box = Box.createHorizontalBox()
       box.add( ggDumpOSC )
       box.add( ggDumpOSC2 )
       box.add( ggConnect )
-      cp.add( box, BorderLayout.EAST )
+      cp.add( box, BorderLayout.SOUTH )
+      cp.setBackground( Color.black )
       f.setResizable( false )
       f.pack
       f.setLocation( 10, Cupola.SCREEN_BOUNDS.height - f.getHeight() - 10 )
       f.setVisible( true )
+   }
+
+   private def makeButton( stage: Stage ) : StageButton = {
+      val b = new StageButton( stage )
+      if( stage == IdleStage ) {
+         b.selected  = true
+         selectedBut = b
+      }
+      b.action = () => {
+         val allowed = selectedBut.stage.transits.contains( stage )
+//         println( "sel.stage = " + selectedBut.stage + " -> trans " + selectedBut.stage.transits + " :: " + stage + " ? " + allowed )
+         if( allowed ) {
+            selectedBut.selected = false
+            b.selected = true
+            selectedBut = b
+         }
+      }
+      b
    }
 
    def updated( u: Cupola.Update ) {
@@ -188,4 +228,38 @@ class GUI extends Cupola.Listener {
 //         g.fillRect( 1, 1, getWidth - 2, getHeight - 2 )
 //      }
 //   }
+
+   class StageButton( val stage: Stage ) extends JLabel( stage.name.map( _.toUpper ), SwingConstants.CENTER ) {
+      setFont( new Font( "SansSerif", Font.BOLD, 12 ))
+      setBorder( BorderFactory.createCompoundBorder(
+         BorderFactory.createEmptyBorder( 2, 2, 2, 2 ), BorderFactory.createCompoundBorder(
+         BorderFactory.createMatteBorder( 2, 2, 2, 2, Color.white ), BorderFactory.createEmptyBorder( 4, 4, 4, 4 ))))
+
+      private var selectedVar = true
+      def selected = selectedVar
+      def selected_=( onOff: Boolean ) {
+         if( selectedVar != onOff ) {
+            selectedVar = onOff
+            setBackground( if( onOff ) Color.white else Color.black )
+            setForeground( if( onOff ) Color.black else Color.white )
+            repaint()
+         }
+      }
+
+      var action = () => ()
+
+      selected = false
+
+      addMouseListener( new MouseAdapter {
+         override def mousePressed( e: MouseEvent ) {
+            if( !selected ) action()
+         }
+      })
+
+      override def paintComponent( g: Graphics ) {
+         g.setColor( getBackground() )
+         g.fillRect( 0, 0, getWidth(), getHeight() )
+         super.paintComponent( g )
+      }
+   }
 }
