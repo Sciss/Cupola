@@ -38,7 +38,7 @@ import DSL._
 object IdleProcess {
    val FADEIN  = 10.0
    val FADEOUT = 10.0
-   val GAIN    = 0.0
+   val GAIN    = -4.5
 
    private case class Active( pgen: Proc, pfilter: Proc )
 }

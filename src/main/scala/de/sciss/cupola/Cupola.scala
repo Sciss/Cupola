@@ -43,26 +43,15 @@ import java.io.{FileOutputStream, FileInputStream, File, RandomAccessFile}
 
 //case class CupolaUpdate( stage: Option[ (Level, Section) ])
 //case class CupolaUpdate( stage: Option[ Double ])
-case class CupolaUpdate( stage: Option[ Stage ])
+case class CupolaUpdate( stage: Option[ Stage ], dist: Option[ Double ])
 
 /**
- *    @version 0.12, 01-Aug-10
+ *    @version 0.13, 10-Oct-10
  */
-object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
-//   import Actor._
+object Cupola extends TxnModel[ CupolaUpdate ] {
 
    type Update    = CupolaUpdate
    type Listener  = L
-
-//   // messages received by this object
-//   case object Run
-//   case object Quit
-//   case object AddListener
-//   case object RemoveListener
-//   case object QueryLevel
-
-//   // messages sent out by this object to listeners
-//   case class LevelChanged( newLevel: Level, newSection: Section )
 
    private val PROP_BASEPATH  = "basepath"
    private val PROP_SCPATH    = "supercollider"
@@ -113,6 +102,8 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
    @volatile var trackingDefeated = false
 
    private var stageRef: Ref[ Stage ] = Ref( IdleStage ) // Ref[ (Level, Section) ]( UnknownLevel -> Section1 )
+   private var distRef = Ref( 0.0 )
+
    private val trackingAddr      = new InetSocketAddress( "127.0.0.1", TRACKING_PORT )
    private val tracking          = {
       val res = OSCClient( TRACKING_PROTO, 0, TRACKING_LOOP, OSCTrackingCodec )
@@ -192,8 +183,8 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
 //      sif.setVisible( true )
 //   }
 
-   protected def emptyUpdate = CupolaUpdate( None )
-   protected def fullUpdate( implicit tx: ProcTxn ) = CupolaUpdate( Some( stageRef() ))
+   protected def emptyUpdate = CupolaUpdate( None, None )
+   protected def fullUpdate( implicit tx: ProcTxn ) = CupolaUpdate( Some( stageRef() ), Some( distRef() ))
 
    def guiRun( code: => Unit ) {
       EventQueue.invokeLater( new Runnable { def run = code })
@@ -244,6 +235,7 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
 //            if( vis != null ) vis.update( t )
 //         }
 //         case OSCMessage( "/cupola", "state", scale: Float ) => stageChange( Some( scale.toDouble ))
+         case OSCDistMessage( dist ) => ProcTxn.spawnAtomic { implicit tx => distChange( dist )}
          case OSCStageMessage( stageID ) =>
             Stage.all.find( _.id == stageID ) match {
                case Some( stage ) => ProcTxn.spawnAtomic { implicit tx => stageChange( stage )}
@@ -252,20 +244,6 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
          case x => println( "!! Cupola: Ignoring OSC message '" + x + "'" )
       }
    }
-
-//   private def stageChange( newStage: Option[ Double ]) {
-//      ProcTxn.atomic { implicit tx =>
-////         val newStage: (Level, Section) = Level.all( levelID ) -> Section.all( sectionID )
-//         val oldStage = stageRef.swap( newStage )
-////println( "OLD " + oldStage + " / " + newStage )
-//         if( oldStage != newStage ) {
-//            touch
-//            val u = updateRef()
-//            updateRef.set( u.copy( stage = newStage ))
-//            pm.stageChange( oldStage, newStage )
-//         }
-//      }
-//   }
 
    private def stageChange( newStage: Stage )( implicit tx: ProcTxn ) {
       val oldStage = stageRef.swap( newStage )
@@ -277,9 +255,14 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
       pm.stageChange( oldStage, newStage ) // even if equal, to allow proper init
    }
 
-//   private def dispatch( msg: AnyRef ) {
-//      listeners.foreach( _ ! msg )
-//   }
+   private def distChange( newDist: Double )( implicit tx: ProcTxn ) {
+//println( "DISTCHANGE" + newDist )
+      distRef.set( newDist )
+      touch
+      val u = updateRef()
+      updateRef.set( u.copy( dist = Some( newDist )))
+      pm.distChange( newDist )
+   }
 
    def init {
       // prevent actor starvation!!!

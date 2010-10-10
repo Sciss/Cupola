@@ -33,6 +33,7 @@ import de.sciss.synth.proc._
 import DSL._
 import java.util.{TimerTask, Timer}
 import collection.immutable.{ Set => ISet }
+import de.sciss.synth
 
 /**
  *    @version 0.13, 10-Oct-10
@@ -143,6 +144,10 @@ object MeditChaosProcess {
       protected val validRef = Ref( false )
 
       protected def insertAndPlay( newRunning: ISet[ RunningProc ], rp: RunningProc, fdt: Double )( implicit tx: ProcTxn ) : Unit
+
+      def stageChange( newScale: Double )( implicit tx: ProcTxn ) {
+         stageChange( Some( lastScaleRef() ), Some( newScale ))
+      }
 
       def stageChange( oldStage: Option[ Double ], newStage: Option[ Double ])( implicit tx: ProcTxn ) {
          newStage foreach { scale =>
@@ -258,7 +263,7 @@ object MeditChaosProcess {
    case class RunningProc( proc: Proc, context: SoundContext, startTime: Long, deathTime: Long )
 }
 
-trait MeditChaosProcess extends CupolaProcess {
+trait MeditChaosProcess extends CupolaDistProcess {
    protected def lo: Double
    protected def hi: Double
 
@@ -317,6 +322,15 @@ trait MeditChaosProcess extends CupolaProcess {
          stageChange( None, Some( lo ))
       } else {
          stageChange( Some( lo ), None )
+      }
+   }
+
+   def distChanged( newDist: Double )( implicit tx: ProcTxn ) {
+      if( active ) {
+         import synth._
+         val scale = newDist.linlin( 0.0, 1.0, lo, hi )
+         inputManager.stageChange( scale )
+         filterManager.stageChange( scale )
       }
    }
 }

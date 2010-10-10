@@ -39,3 +39,7 @@ trait CupolaProcess {
 
 //   def trigger : GE
 }
+
+trait CupolaDistProcess extends CupolaProcess {
+   def distChanged( newDist: Double )( implicit tx: ProcTxn ) : Unit
+}

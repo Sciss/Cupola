@@ -30,7 +30,12 @@ where triggers are recognized in the following stages:
    finish:
       trigID 0 : particle train initiated
 
-[ "/equi", <(Float) pos> ]
-is the position from 0.0 (pure meditation/chaos)
-towards 1.0 (equilibrium) and is recognized in
-stages 3 and 4
+[ "/dist", <(Float) pos> ]
+a distance from 0.0 to 1.0.
+recognized in the following stages:
+   3 meditation
+      where 0.0 = pure meditation
+      and   1.0 = equilibrium
+   4 chaos
+      where 0.0 = pure chaos
+      and   1.0 = equilibrium
