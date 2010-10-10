@@ -40,8 +40,10 @@ import de.sciss.osc._
 import java.net.{InetSocketAddress, SocketAddress}
 import java.util.Properties
 import java.io.{FileOutputStream, FileInputStream, File, RandomAccessFile}
+
 //case class CupolaUpdate( stage: Option[ (Level, Section) ])
-case class CupolaUpdate( stage: Option[ Double ])
+//case class CupolaUpdate( stage: Option[ Double ])
+case class CupolaUpdate( stage: Option[ Stage ])
 
 /**
  *    @version 0.12, 01-Aug-10
@@ -85,10 +87,15 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
       prop
    }
 
-   val BASE_PATH           = properties.getProperty( PROP_BASEPATH ) + File.separator // "/Users/rutz/Desktop/Cupola/"
+   val fs                  = File.separator
+   val BASE_PATH           = properties.getProperty( PROP_BASEPATH )
+   val AUDIO_PATH          = BASE_PATH + fs + "audio_work" + fs + "material"
+   val OSC_PATH            = BASE_PATH + fs + "osc"
+   val REC_PATH            = BASE_PATH + fs + "rec"
    val DUMP_OSC            = false
    val NUAGES_ANTIALIAS    = false
    val INTERNAL_AUDIO      = false
+   val NODE_TREE_PANEL     = false
    val MASTER_NUMCHANNELS  = 2 // 4
    val MASTER_OFFSET       = 0
    val MIC_OFFSET          = 0
@@ -105,7 +112,7 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
    private var vis: TrackingVis = null
    @volatile var trackingDefeated = false
 
-   private var stageRef: Ref[ Option[ Double ]] = Ref( None ) // Ref[ (Level, Section) ]( UnknownLevel -> Section1 )
+   private var stageRef: Ref[ Stage ] = Ref( IdleStage ) // Ref[ (Level, Section) ]( UnknownLevel -> Section1 )
    private val trackingAddr      = new InetSocketAddress( "127.0.0.1", TRACKING_PORT )
    private val tracking          = {
       val res = OSCClient( TRACKING_PROTO, 0, TRACKING_LOOP, OSCTrackingCodec )
@@ -159,7 +166,7 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
    }
 
    val support = new REPLSupport
-   val pm      = new ProcessManager
+   val pm      = new ProcessManager2
 
    @volatile var s: Server       = _
    @volatile var booting: ServerConnection = _
@@ -186,14 +193,14 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
 //   }
 
    protected def emptyUpdate = CupolaUpdate( None )
-   protected def fullUpdate( implicit tx: ProcTxn ) = CupolaUpdate( stageRef() )
+   protected def fullUpdate( implicit tx: ProcTxn ) = CupolaUpdate( Some( stageRef() ))
 
    def guiRun( code: => Unit ) {
       EventQueue.invokeLater( new Runnable { def run = code })
    }
 
 //   def simulate( msg: OSCMessage ) { simulator ! msg }
-   def simulate( p: OSCPacket ) { try { tracking ! p } catch { case _ => }}
+   def simulateRemote( p: OSCPacket ) { try { tracking ! p } catch { case _ => }}
    def simulateLocal( p: OSCPacket ) {
       simulateLocal( p, trackingLocalAddr, System.currentTimeMillis )
    }
@@ -202,6 +209,10 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
          case m: OSCMessage => messageReceived( m, addr, time )
          case b: OSCBundle => b.packets.foreach( simulateLocal( _, addr, b.timetag ))
       }
+   }
+
+   def simulateBoth( p: OSCPacket ) {
+      if( tracking.isActive ) simulateRemote( p ) else simulateLocal( p )
    }
 
 //   def defeatTracking( defeat: Boolean ) { trackingDefeatedVar = defeat }
@@ -228,27 +239,42 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
          return
       }
       msg match {
-         case t: OSCTrackingMessage => {
-            stageChange( Some( t.state / 8.0 ))
-            if( vis != null ) vis.update( t )
-         }
-         case OSCMessage( "/cupola", "state", scale: Float ) => stageChange( Some( scale.toDouble )) 
-         case x => println( "Cupola: Ignoring OSC message '" + x + "'" )
+//         case t: OSCTrackingMessage => {
+//            stageChange( Some( t.state / 8.0 ))
+//            if( vis != null ) vis.update( t )
+//         }
+//         case OSCMessage( "/cupola", "state", scale: Float ) => stageChange( Some( scale.toDouble ))
+         case OSCStageMessage( stageID ) =>
+            Stage.all.find( _.id == stageID ) match {
+               case Some( stage ) => ProcTxn.spawnAtomic { implicit tx => stageChange( stage )}
+               case None => println( "!! Cupola: Ignoring illegal stage ID " + stageID ) 
+            }
+         case x => println( "!! Cupola: Ignoring OSC message '" + x + "'" )
       }
    }
 
-   private def stageChange( newStage: Option[ Double ]) {
-      ProcTxn.atomic { implicit tx =>
-//         val newStage: (Level, Section) = Level.all( levelID ) -> Section.all( sectionID )
-         val oldStage = stageRef.swap( newStage )
-//println( "OLD " + oldStage + " / " + newStage )
-         if( oldStage != newStage ) {
-            touch
-            val u = updateRef()
-            updateRef.set( u.copy( stage = newStage ))
-            pm.stageChange( oldStage, newStage )
-         }
+//   private def stageChange( newStage: Option[ Double ]) {
+//      ProcTxn.atomic { implicit tx =>
+////         val newStage: (Level, Section) = Level.all( levelID ) -> Section.all( sectionID )
+//         val oldStage = stageRef.swap( newStage )
+////println( "OLD " + oldStage + " / " + newStage )
+//         if( oldStage != newStage ) {
+//            touch
+//            val u = updateRef()
+//            updateRef.set( u.copy( stage = newStage ))
+//            pm.stageChange( oldStage, newStage )
+//         }
+//      }
+//   }
+
+   private def stageChange( newStage: Stage )( implicit tx: ProcTxn ) {
+      val oldStage = stageRef.swap( newStage )
+      if( oldStage != newStage ) {
+         touch
+         val u = updateRef()
+         updateRef.set( u.copy( stage = Some( newStage )))
       }
+      pm.stageChange( oldStage, newStage ) // even if equal, to allow proper init
    }
 
 //   private def dispatch( msg: AnyRef ) {
@@ -263,17 +289,20 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
       val sif  = new ScalaInterpreterFrame( support /* ntp */ )
       val ssp  = new ServerStatusPanel()
       val sspw = ssp.makeWindow
-      val ntp  = new NodeTreePanel()
-      val ntpw = ntp.makeWindow
-      ntpw.setLocation( sspw.getX, sspw.getY + sspw.getHeight + 32 )
+      val ntpo: Option[ NodeTreePanel ] = if( NODE_TREE_PANEL ) {
+         val ntp = new NodeTreePanel()
+         val ntpw = ntp.makeWindow
+         ntpw.setLocation( sspw.getX, sspw.getY + sspw.getHeight + 32 )
+         ntpw.setVisible( true )
+         Some( ntp )
+      } else None
       sspw.setVisible( true )
-      ntpw.setVisible( true )
       sif.setLocation( sspw.getX + sspw.getWidth + 32, sif.getY )
       sif.setVisible( true )
       booting = Server.boot( options = options ) {
          case ServerConnection.Preparing( srv ) => {
             ssp.server = Some( srv )
-            ntp.server = Some( srv )
+            ntpo.foreach( _.server = Some( srv ))
          }
          case ServerConnection.Running( srv ) => {
             ProcDemiurg.addServer( srv )
@@ -286,17 +315,9 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
             initNuages
             new GUI
             if( SHOW_VIS ) vis = new TrackingVis
-//            tracking ! OSCMessage( "/notify", 1 )
-
-//            // freesound
-//            val cred  = new RandomAccessFile( BASE_PATH + "cred.txt", "r" )
-//            val credL = cred.readLine().split( ":" )
-//            cred.close()
-//            initFreesound( credL( 0 ), credL( 1 ))
          }
       }
       Runtime.getRuntime().addShutdownHook( new Thread { override def run = shutDown })
-//      booting.start
    }
 
    private def initNuages {
@@ -306,32 +327,19 @@ object Cupola /* extends Actor */ extends TxnModel[ CupolaUpdate ] {
          new AudioBus( s, MASTER_OFFSET, MASTER_NUMCHANNELS )
       }
       val soloBus    = Bus.audio( s, 2 )
-      val recordPath = BASE_PATH + "rec"
-      config         = NuagesConfig( s, Some( masterBus ), Some( soloBus ), Some( recordPath ))
+      config         = NuagesConfig( s, Some( masterBus ), Some( soloBus ), Some( REC_PATH ))
       val f          = new NuagesFrame( config )
       f.panel.display.setHighQuality( NUAGES_ANTIALIAS )
       f.setSize( 640, 480 )
       f.setLocation( ((SCREEN_BOUNDS.width - f.getWidth()) >> 1) + 100, 10 )
       f.setVisible( true )
       support.nuages = f
-      CupolaNuages.init( s, f )
+      ProcTxn.atomic { implicit tx =>
+         CupolaNuages.init( s )
+//         pm.init
+         stageChange( IdleStage )
+      }
    }
-
-//   def act = loop {
-//      react {
-//         case msg: LevelChanged => {
-//            level    = msg.newLevel
-//            section  = msg.newSection
-//            dispatch( msg )
-//         }
-//         case QueryLevel      => () // reply( LevelChanged( level, section ))
-////         case Run             => run
-////         case Quit            => quit
-//         case AddListener     => listeners += sender
-//         case RemoveListener  => listeners -= sender
-//         case x               => println( "Cupola: Ignoring actor message '" + x + "'" )
-//      }
-//   }
 
    def quit { System.exit( 0 )}
 

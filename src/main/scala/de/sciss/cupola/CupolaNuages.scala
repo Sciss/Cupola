@@ -36,7 +36,7 @@ import ugen._
 import Float.{ PositiveInfinity => inf }
 
 /**
- *    @version 0.12, 01-Aug-10
+ *    @version 0.13, 10-Oct-10
  */
 object CupolaNuages extends {
    import DSL._
@@ -44,17 +44,19 @@ object CupolaNuages extends {
    val NUM_LOOPS        = 7
    val LOOP_DUR         = 30
 
-   var f : NuagesFrame = _
+//   var f : NuagesFrame = _
    var masterSynth : Synth  = _
 
    var fieldCollectors : Map[ Field, Proc ] = _
 //   var collColor:  Proc = _
 //   var collText:   Proc = _
 //   var collSense:  Proc = _
-//   var collMaster: Proc = _
+   var collMaster: Proc = _
    var pMaster:    Proc = _
 
-   def init( s: Server, f: NuagesFrame ) = ProcTxn.atomic { implicit tx =>
+   var procMap = Map.empty[ Stage, CupolaProcess ]
+
+   def init( s: Server /*, f: NuagesFrame*/ )( implicit tx: ProcTxn ) {
 
       // -------------- DIFFUSIONS --------------
 
@@ -637,7 +639,7 @@ object CupolaNuages extends {
          field -> pColl
       })( breakOut )
       val sub        = (fieldCollectors - MasterField).values
-      val collMaster = fieldCollectors( MasterField )
+      collMaster = fieldCollectors( MasterField )
       sub foreach { _ ~> collMaster }
 
       // ---- master ----
@@ -678,7 +680,6 @@ object CupolaNuages extends {
       pMaster ~> pComp
       pComp.play
 
-      // tablet
-      this.f = f
+      procMap += IdleStage -> new IdleProcess
    }
 }

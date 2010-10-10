@@ -44,9 +44,9 @@ import java.awt._
 class GUI extends Cupola.Listener {
    gui =>
 
-   private var valid = false
+//   private var valid = false
 
-   private var selectedBut: StageButton = _
+   private var selectedBut: Option[ StageButton ] = None
    private val ggIdle     = makeButton( IdleStage )
    private val ggCalib    = makeButton( CalibStage )
    private val ggHidden   = makeButton( HiddenStage )
@@ -55,6 +55,8 @@ class GUI extends Cupola.Listener {
    private val ggEqui     = makeButton( EquiStage )
    private val ggLimbo    = makeButton( LimboStage )
    private val ggFinal    = makeButton( FinalStage )
+   private val ggMap: Map[ Stage, StageButton ] =
+      Seq( ggIdle, ggCalib, ggHidden, ggMedit, ggChaos, ggEqui, ggLimbo, ggFinal ).map( but => but.stage -> but)( breakOut)
 
    val ggLevel = new JComponent {
       private var scaleVar = 0.0
@@ -72,8 +74,8 @@ class GUI extends Cupola.Listener {
             scale = math.max( 0.0, math.min( 1.0, e.getX().toDouble / getWidth() ))
 //            /* if( valid ) */ Cupola.simulate( OSCMessage( "/cupola", "state", scale.toFloat ))
             val stage = (scale * 8 + 0.5).toInt
-            Cupola.simulate( OSCTrackingMessage( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, stage ))
-            Cupola.simulateLocal( OSCMessage( "/cupola", "state", scale.toFloat ))
+//            Cupola.simulate( OSCTrackingMessage( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, stage ))
+//            Cupola.simulateLocal( OSCMessage( "/cupola", "state", scale.toFloat ))
          }
       }
       addMouseListener( adapter )
@@ -94,7 +96,7 @@ class GUI extends Cupola.Listener {
       val res = new JCheckBox()
       res.addActionListener( new ActionListener {
          def actionPerformed( e: ActionEvent ) {
-            Cupola.simulate( OSCMessage( "/dumpOSC", if( res.isSelected ) 1 else 0 ))
+            Cupola.simulateRemote( OSCMessage( "/dumpOSC", if( res.isSelected ) 1 else 0 ))
          }
       })
       res.setFocusable( false )
@@ -158,8 +160,8 @@ class GUI extends Cupola.Listener {
       ggIdle.setAlignmentX( 0.5f )
       yBox.add( ggIdle )
 
-ggIdle.setBackground( Color.white )
-ggIdle.setForeground( Color.black )
+//ggIdle.setBackground( Color.white )
+//ggIdle.setForeground( Color.black )
 
 
 //      cp.add( levelPane, BorderLayout.CENTER )
@@ -179,17 +181,18 @@ ggIdle.setForeground( Color.black )
 
    private def makeButton( stage: Stage ) : StageButton = {
       val b = new StageButton( stage )
-      if( stage == IdleStage ) {
-         b.selected  = true
-         selectedBut = b
-      }
+//      if( stage == IdleStage ) {
+//         b.selected  = true
+//         selectedBut = b
+//      }
       b.action = () => {
-         val allowed = selectedBut.stage.transits.contains( stage )
+         val allowed = selectedBut.map( _.stage.transits.contains( stage )).getOrElse( false )
 //         println( "sel.stage = " + selectedBut.stage + " -> trans " + selectedBut.stage.transits + " :: " + stage + " ? " + allowed )
          if( allowed ) {
-            selectedBut.selected = false
-            b.selected = true
-            selectedBut = b
+//            selectedBut.selected = false
+//            b.selected = true
+//            selectedBut = b
+            Cupola.simulateBoth( OSCStageMessage( stage.id ))
          }
       }
       b
@@ -197,11 +200,17 @@ ggIdle.setForeground( Color.black )
 
    def updated( u: Cupola.Update ) {
       Cupola.guiRun {
-         u.stage foreach { scale =>
-            valid = true
+         u.stage foreach { stage =>
+            selectedBut.foreach( _.selected = false )
+            ggMap.get( stage ) foreach { but =>
+               selectedBut = Some( but )
+               but.selected = true
+            }
+
+//            valid = true
 //            val i = (scale * 0x1000).toInt
 //            if( ggLevel.getValue() != i ) ggLevel.setValue( i )
-            ggLevel.scale = scale
+//            ggLevel.scale = scale
 //            selectedCell.foreach( _.deselect )
 //            selectedCell = map.get( tup )
 //            selectedCell.foreach( _.select )

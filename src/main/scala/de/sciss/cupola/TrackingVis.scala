@@ -7,6 +7,7 @@ import java.io.File
 import java.util.Date
 import java.text.SimpleDateFormat
 import de.sciss.osc.{OSCBundle, OSCMessage}
+import Cupola._
 
 class TrackingVis extends JComponent {
    vis =>
@@ -89,7 +90,7 @@ class TrackingVis extends JComponent {
       sync.synchronized {
          actionStop
          val dlg = new FileDialog( f, "Open OSC File for Playback" )
-         dlg.setDirectory( Cupola.BASE_PATH + "osc" )
+         dlg.setDirectory( Cupola.OSC_PATH )
          dlg.setVisible( true )
          val path = dlg.getFile()
          val dir  = dlg.getDirectory()
@@ -105,7 +106,7 @@ class TrackingVis extends JComponent {
    def actionRecord {
       sync.synchronized {
          actionStop
-         val file = new File( Cupola.BASE_PATH + "osc/" + df.format( new Date() ))
+         val file = new File( OSC_PATH + fs + df.format( new Date() ))
          fileOption = Some( file )
          recorderOption = Some( new OSCRecorder( file, OSCTrackingCodec ))
          ggPlay.setEnabled( false )

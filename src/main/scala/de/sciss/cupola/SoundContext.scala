@@ -5,6 +5,7 @@ import de.sciss.synth._
 import de.sciss.synth.ugen._
 import de.sciss.synth.proc._
 import Util._
+import Cupola._
 
 case class SoundContext( name: String, settings: SoundSettings,
                          scaleStart: Double, scaleStop: Double, weight: Double,
@@ -29,7 +30,7 @@ extends SoundSettings {
          val pamp    = pControl( "amp",   ParamSpec( 0.1f, 10, ExpWarp ), gain.dbamp )
          val ppos    = pScalar(  "pos",   ParamSpec( 0, 1 ), 0 )
          graph {
-            val fullPath   = Cupola.BASE_PATH + "audio_work/material/" + file
+            val fullPath   = AUDIO_PATH + fs + file
             val afSpec     = audioFileSpec( fullPath )
             val startPos   = ppos.v
             val startFrame = (startPos * afSpec.numFrames).toLong

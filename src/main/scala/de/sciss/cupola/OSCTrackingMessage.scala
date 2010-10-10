@@ -13,35 +13,49 @@ case class OSCTrackingMessage( pointX: Int, pointY: Int, eyeLX: Int, eyeLY: Int,
                             pupLX: Int, pupLY: Int, pupRX: Int, pupRY: Int, blinkL: Int, blinkR: Int, state: Int )
 extends OSCMessage( "/t", pointX, pointY, eyeLX, eyeLY, eyeRX, eyeRY, pupLX, pupLY, pupRX, pupRY, blinkL, blinkR, state )
 
+case class OSCStageMessage( stage: Int ) extends OSCMessage( "/stage", stage )
+
 object OSCTrackingCodec extends OSCPacketCodec {
-   private def decodeTracking( b: ByteBuffer ) : OSCMessage = {
-//      // ",ffiiiii iiiiii
-//      if( (b.getLong() != 0x2C66666969696969L) || (b.getInt() != 0x69696969) || (b.getShort() != 0x6969) ) decodeFail
-      // ",ffiiiii iiiiii
-      if( (b.getLong() != 0x2C69696969696969L) || (b.getInt() != 0x69696969) || (b.getShort() != 0x6969) ) decodeFail
+   private def decodeStage( b: ByteBuffer ) : OSCMessage = {
+//      // ",i"
+      if( (b.getShort() != 0x2C69) ) decodeFail
 		OSCPacket.skipToValues( b )
+      val stage         = b.getInt()
+      OSCStageMessage( stage )
+   }
+
+      private def decodeTracking( b: ByteBuffer ) : OSCMessage = {
+//      // ",ffiiiii iiiiii"
+//      if( (b.getLong() != 0x2C66666969696969L) || (b.getInt() != 0x69696969) || (b.getShort() != 0x6969) ) decodeFail
+         // ",ffiiiii iiiiii"
+         if( (b.getLong() != 0x2C69696969696969L) || (b.getInt() != 0x69696969) || (b.getShort() != 0x6969) ) decodeFail
+         OSCPacket.skipToValues( b )
 
 //      val pointX        = b.getFloat()
 //      val pointY        = b.getFloat()
-		val pointX        = b.getInt()
-      val pointY        = b.getInt()
-      val eyeLX         = b.getInt()
-      val eyeLY         = b.getInt()
-      val eyeRX         = b.getInt()
-      val eyeRY         = b.getInt()
-      val pupLX         = b.getInt()
-      val pupLY         = b.getInt()
-      val pupRX         = b.getInt()
-      val pupRY         = b.getInt()
-      val blinkL        = b.getInt()
-      val blinkR        = b.getInt()
-      val state         = b.getInt()
+         val pointX        = b.getInt()
+         val pointY        = b.getInt()
+         val eyeLX         = b.getInt()
+         val eyeLY         = b.getInt()
+         val eyeRX         = b.getInt()
+         val eyeRY         = b.getInt()
+         val pupLX         = b.getInt()
+         val pupLY         = b.getInt()
+         val pupRX         = b.getInt()
+         val pupRY         = b.getInt()
+         val blinkL        = b.getInt()
+         val blinkR        = b.getInt()
+         val state         = b.getInt()
 
 		OSCTrackingMessage( pointX, pointY, eyeLX, eyeLY, eyeRX, eyeRY, pupLX, pupLY, pupRX, pupRY, blinkL, blinkR, state )
 	}
 
    override protected def decodeMessage( name: String, b: ByteBuffer ) : OSCMessage = {
-      if( name == "/t" ) decodeTracking( b ) else super.decodeMessage( name, b )
+      name match {
+         case "/t"      => decodeTracking( b )
+         case "/stage"  => decodeStage( b )
+         case _         => super.decodeMessage( name, b ) 
+      }
 	}
 
    private def decodeFail : Nothing = throw new OSCException( OSCException.DECODE, null )
