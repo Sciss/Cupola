@@ -681,6 +681,7 @@ object CupolaNuages extends {
       pComp.play
 
       procMap += IdleStage  -> new IdleProcess
+      procMap += CalibStage -> new CalibProcess
       procMap += MeditStage -> new MeditProcess
       procMap += ChaosStage -> new ChaosProcess
    }

@@ -44,6 +44,7 @@ object Util {
       rnd.nextDouble() * (hi - lo) + lo
    }
 
+   // lo to hi
    def rrand( lo: Int, hi: Int ) : Int = {
       if( lo <= hi ) {
          rnd.nextInt( hi - lo + 1 ) + lo
@@ -52,7 +53,12 @@ object Util {
       }
    }
 
+   // 0 to i - 1 (0 until i)
+   def rand( i: Int ) : Int= rnd.nextInt( i )
+
    def rand( d: Double ) : Double = rnd.nextDouble() * d
+
+   def coin( w: Double ) : Boolean = rnd.nextDouble() < w
 
    def choose[ T ]( seq: Traversable[ T ]) : T = {
       val idxSeq = seq.toIndexedSeq
@@ -63,5 +69,17 @@ object Util {
       val i    = rnd.nextDouble
       var sum  = 0.0
       seq find { e => sum += fun( e ); sum >= i } getOrElse seq.last
+   }
+
+   def nextPowerOfTwo( x: Int ) : Int = {
+      var y = 1
+      while( y < x ) y <<= 1
+      y
+   }
+
+   def nextPowerOfTwo( x: Long ) : Long = {
+      var y = 1
+      while( y < x ) y <<= 1
+      y
    }
 }
