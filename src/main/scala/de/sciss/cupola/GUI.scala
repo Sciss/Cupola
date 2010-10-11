@@ -29,75 +29,46 @@
 package de.sciss.cupola
 
 import Cupola._
-import java.awt.{ BorderLayout, Color, Dimension, Graphics, GridLayout }
 import actors.Actor
 import collection.breakOut
 import de.sciss.osc.OSCMessage
 import de.sciss.synth.proc.ProcTxn
 import javax.swing._
-import event.{MouseInputAdapter, ChangeEvent, ChangeListener}
+import javax.swing.event.{MouseInputAdapter, ChangeEvent, ChangeListener}
 import java.awt.event._
+import java.awt._
 
 /**
- *    @version 0.10, 01-Aug-10
+ *    @version 0.13, 10-Oct-10
  */
 class GUI extends Cupola.Listener {
    gui =>
 
-   private var valid = false
-//   private var selectedCell: Option[ Cell ] = None
-//   private val levelPane = new JPanel( new GridLayout( Level.all.size, Section.all.size ))
-//   private val map = Map[ (Level, Section), Cell ]( Level.all.flatMap( lvl => {
-//      Section.all.map( sec => {
-//         val gg = new Cell
-//         gg.addMouseListener( new MouseAdapter {
-//            override def mousePressed( e: MouseEvent ) {
-//               if( valid ) Cupola.simulate( OSCMessage( "/cupola", "state", lvl.id, sec.id ))
-//            }
-//         })
-//         levelPane.add( gg )
-//         (lvl, sec) -> gg
-//      })
-//   }): _* )
-   val ggLevel = new JComponent {
-      private var scaleVar = 0.0
-      def scale = scaleVar
-      def scale_=( newVal: Double ) {
-         if( newVal != scaleVar ) {
-            scaleVar = newVal
-            repaint()
-         }
-      }
-      val adapter = new MouseInputAdapter {
-         override def mousePressed( e: MouseEvent ) { adjust( e )}
-         override def mouseDragged( e: MouseEvent ) { adjust( e )}
-         def adjust( e: MouseEvent ) {
-            scale = math.max( 0.0, math.min( 1.0, e.getX().toDouble / getWidth() ))
-//            /* if( valid ) */ Cupola.simulate( OSCMessage( "/cupola", "state", scale.toFloat ))
-            val stage = (scale * 8 + 0.5).toInt
-            Cupola.simulate( OSCTrackingMessage( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, stage ))
-            Cupola.simulateLocal( OSCMessage( "/cupola", "state", scale.toFloat ))
-         }
-      }
-      addMouseListener( adapter )
-      addMouseMotionListener( adapter ) 
-      setPreferredSize( new Dimension( 320, 32 ))
+   private var selectedBut: Option[ StageButton ] = None
+   private val ggIdle     = makeButton( IdleStage )
+   private val ggCalib    = makeButton( CalibStage )
+   private val ggHidden   = makeButton( HiddenStage )
+   private val ggMedit    = makeButton( MeditStage )
+   private val ggChaos    = makeButton( ChaosStage )
+   private val ggEqui     = makeButton( EquiStage )
+   private val ggLimbo    = makeButton( LimboStage )
+   private val ggFinal    = makeButton( FinalStage )
+   private val ggMap: Map[ Stage, StageButton ] =
+      Seq( ggIdle, ggCalib, ggHidden, ggMedit, ggChaos, ggEqui, ggLimbo, ggFinal ).map( but => but.stage -> but)( breakOut)
 
-      override def paintComponent( g: Graphics ) {
-         g.setColor( Color.black )
-         g.fillRect( 0, 0, getWidth(), getHeight() )
-         g.setColor( Color.white )
-         g.drawRect( 0, 0, getWidth() - 1, getHeight() - 1 )
-         val x = (scale * getWidth()).toInt
-         g.fillRect( 0, 0, x, getHeight() )
+   val ggLevel = {
+      val res = new Slider
+      res.action = lvl => {
+//println( "DIST = " + lvl )
+         Cupola.simulateBoth( OSCDistMessage( lvl.toFloat ))
       }
+      res
    }
-
    val ggDumpOSC = {
       val res = new JCheckBox()
       res.addActionListener( new ActionListener {
          def actionPerformed( e: ActionEvent ) {
-            Cupola.simulate( OSCMessage( "/dumpOSC", if( res.isSelected ) 1 else 0 ))
+            Cupola.simulateRemote( OSCMessage( "/dumpOSC", if( res.isSelected ) 1 else 0 ))
          }
       })
       res.setFocusable( false )
@@ -142,50 +113,140 @@ class GUI extends Cupola.Listener {
             Cupola.quit
          }
       })
-//      cp.add( levelPane, BorderLayout.CENTER )
-      cp.add( ggLevel, BorderLayout.CENTER )
+
+      val yBox = Box.createVerticalBox()
+      ggFinal.setAlignmentX( 0.5f )
+      yBox.add( ggFinal )
+      ggLimbo.setAlignmentX( 0.5f )
+      yBox.add( ggLimbo )
+      val xBox = Box.createHorizontalBox()
+      xBox.add( ggMedit )
+      xBox.add( ggEqui )
+      xBox.add( ggChaos )
+      xBox.setAlignmentX( 0.5f )
+      yBox.add( xBox )
+      ggHidden.setAlignmentX( 0.5f )
+      yBox.add( ggHidden )
+      ggCalib.setAlignmentX( 0.5f )
+      yBox.add( ggCalib )
+      ggIdle.setAlignmentX( 0.5f )
+      yBox.add( ggIdle )
+      cp.add( yBox, BorderLayout.CENTER )
+
+      val eBox = Box.createVerticalBox()
+      eBox.add( ggLevel )
+      cp.add( eBox, BorderLayout.EAST )
+
       val box = Box.createHorizontalBox()
+      box.setBorder( BorderFactory.createEmptyBorder( 4, 2, 2, 2 ))
       box.add( ggDumpOSC )
       box.add( ggDumpOSC2 )
       box.add( ggConnect )
-      cp.add( box, BorderLayout.EAST )
+      cp.add( box, BorderLayout.SOUTH )
+      cp.setBackground( Color.black )
       f.setResizable( false )
       f.pack
       f.setLocation( 10, Cupola.SCREEN_BOUNDS.height - f.getHeight() - 10 )
       f.setVisible( true )
    }
 
+   private def makeButton( stage: Stage ) : StageButton = {
+      val b = new StageButton( stage )
+      b.action = () => {
+         val allowed = selectedBut.map( _.stage.transits.contains( stage )).getOrElse( false )
+         if( allowed ) {
+            Cupola.simulateBoth( OSCStageMessage( stage.id ))
+         }
+      }
+      b
+   }
+
    def updated( u: Cupola.Update ) {
       Cupola.guiRun {
-         u.stage foreach { scale =>
-            valid = true
-//            val i = (scale * 0x1000).toInt
-//            if( ggLevel.getValue() != i ) ggLevel.setValue( i )
-            ggLevel.scale = scale
-//            selectedCell.foreach( _.deselect )
-//            selectedCell = map.get( tup )
-//            selectedCell.foreach( _.select )
+         u.stage foreach { stage =>
+            selectedBut.foreach( _.selected = false )
+            ggMap.get( stage ) foreach { but =>
+               selectedBut = Some( but )
+               but.selected = true
+            }
          }
+         u.dist.foreach( ggLevel.value = _ )
       }
    }
 
-//   private class Cell extends JComponent {
-//      setPreferredSize( new Dimension( 64, 32 ))
-//      setOpaque( false )
-//      deselect
-//
-//      def select {
-//         setBackground( Color.white )
-//      }
-//
-//      def deselect {
-//         setBackground( Color.black )
-//      }
-//
-//      override def paintComponent( g: Graphics ) {
-//         super.paintComponent( g )
-//         g.setColor( getBackground )
-//         g.fillRect( 1, 1, getWidth - 2, getHeight - 2 )
-//      }
-//   }
+   class StageButton( val stage: Stage ) extends JLabel( stage.name.map( _.toUpper ), SwingConstants.CENTER ) {
+      setFont( new Font( "SansSerif", Font.BOLD, 12 ))
+      setBorder( BorderFactory.createCompoundBorder(
+         BorderFactory.createEmptyBorder( 2, 2, 2, 2 ), BorderFactory.createCompoundBorder(
+         BorderFactory.createMatteBorder( 2, 2, 2, 2, Color.white ), BorderFactory.createEmptyBorder( 4, 4, 4, 4 ))))
+
+      private var selectedVar = true
+      def selected = selectedVar
+      def selected_=( onOff: Boolean ) {
+         if( selectedVar != onOff ) {
+            selectedVar = onOff
+            setBackground( if( onOff ) Color.white else Color.black )
+            setForeground( if( onOff ) Color.black else Color.white )
+            repaint()
+         }
+      }
+
+      var action = () => ()
+
+      selected = false
+
+      addMouseListener( new MouseAdapter {
+         override def mousePressed( e: MouseEvent ) {
+            if( !selected ) action()
+         }
+      })
+
+      override def paintComponent( g: Graphics ) {
+         g.setColor( getBackground() )
+         g.fillRect( 0, 0, getWidth(), getHeight() )
+         super.paintComponent( g )
+      }
+   }
+
+   class Slider extends JComponent {
+      var action = (d: Double) => ()
+
+      private var valueVar = 0.0
+      def value = valueVar
+      def value_=( newVal: Double ) {
+         if( newVal != valueVar ) {
+            valueVar = newVal
+            repaint()
+         }
+      }
+      private val adapter = new MouseInputAdapter {
+         override def mousePressed( e: MouseEvent ) { adjust( e )}
+         override def mouseDragged( e: MouseEvent ) { adjust( e )}
+         def adjust( e: MouseEvent ) {
+            val i = getInsets()
+            val v = math.max( 0.0, math.min( 1.0, (e.getX() - i.left).toDouble / (getWidth() - (i.left + i.right)) ))
+            action( v )
+         }
+      }
+      addMouseListener( adapter )
+      addMouseMotionListener( adapter )
+      setPreferredSize( new Dimension( 320, 32 ))
+      setBorder( BorderFactory.createCompoundBorder(
+         BorderFactory.createEmptyBorder( 2, 2, 2, 2 ), BorderFactory.createCompoundBorder(
+         BorderFactory.createMatteBorder( 2, 2, 2, 2, Color.white ), BorderFactory.createEmptyBorder( 2, 2, 2, 2 ))))
+      setBackground( Color.black )
+      setForeground( Color.white )
+
+      override def paintComponent( g: Graphics ) {
+         g.setColor( getBackground() )
+         g.fillRect( 0, 0, getWidth(), getHeight() )
+         g.setColor( getForeground() )
+         val i = getInsets()
+         g.fillRect( i.left, i.top, ((getWidth() - (i.left + i.right)) * valueVar).toInt, getHeight() - (i.top + i.bottom) )
+//         g.setColor( Color.white )
+//         g.drawRect( 0, 0, getWidth() - 1, getHeight() - 1 )
+//         val x = (scale * getWidth()).toInt
+//         g.fillRect( 0, 0, x, getHeight() )
+      }
+   }
 }

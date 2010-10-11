@@ -1,0 +1,41 @@
+OSC-Command Reference (10-Oct-10)
+---------------------------------
+
+received by the cupola audio software
+via TCP on port 1201
+
+[ "/stage", <(Int) stageID> ]
+where stageID:
+   0 idle
+   1 calibration
+   2 hidden messages
+   3 mediation
+   4 chaos
+   5 equilibrium
+   6 limbo
+   7 finish
+
+[ "/pos", <(Float) x>, <(Float) y> ]
+as a mean position of the eyes (i.e. nose pointer?),
+where x is from 0.0 (left) to 1.0 (right)
+and   y is from 0.0 (top)  to 1.0 (bottom)
+; positions are recognized in the following stages:
+   2 hidden messages
+   6 limbo
+
+[ "/trig", <(Int) trigID> ]
+where triggers are recognized in the following stages:
+   hidden messages:
+      trigID 0 : message discovered
+   finish:
+      trigID 0 : particle train initiated
+
+[ "/dist", <(Float) pos> ]
+a distance from 0.0 to 1.0.
+recognized in the following stages:
+   3 meditation
+      where 0.0 = pure meditation
+      and   1.0 = equilibrium
+   4 chaos
+      where 0.0 = pure chaos
+      and   1.0 = equilibrium

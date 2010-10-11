@@ -1,5 +1,5 @@
 /*
- *  ProcessManager.scala
+ *  MeditChaosProcess.scala
  *  (Cupola)
  *
  *  Copyright (c) 2010 Hanns Holger Rutz. All rights reserved.
@@ -33,101 +33,104 @@ import de.sciss.synth.proc._
 import DSL._
 import java.util.{TimerTask, Timer}
 import collection.immutable.{ Set => ISet }
+import de.sciss.synth
 
 /**
- *    @version 0.12, 17-Aug-10
+ *    @version 0.13, 10-Oct-10
  */
-object ProcessManager {
+object MeditChaosProcess {
    import Util._
    
    var verbose = false
 
-   private val stopAndDisposeListener = new Proc.Listener {
-      def updated( u: Proc.Update ) {
-         if( !u.state.fading && (!u.state.playing || u.state.bypassed) ) {
-            // XXX workaround: CCSTM still has the previous txn visible,
-            // hence we need to wait a bit longer :-(
-//EventQueue.invokeLater { new Runnable { def run {
-            if( verbose ) println( "" + new java.util.Date() + " FINAL-DISPOSE " + u.proc )
-            disposeProc( u.proc ) // ProcTxn.atomic { implicit tx => }
-//}}}
-         }
-      }
-   }
-
-   private def disposeProc( proc: Proc ) {
-      ProcTxn.atomic { implicit t =>
-         proc.anatomy match {
-            case ProcFilter => disposeFilter( proc )
-            case _ => disposeGenDiff( proc )
-         }
-      }
-   }
-
-   // XXX copied from Nuages. we should have this going into SoundProcesses directly somehow
-   private def disposeFilter( proc: Proc )( implicit tx: ProcTxn ) {
-      val in   = proc.audioInput( "in" )
-      val out  = proc.audioOutput( "out" )
-      val ines = in.edges.toSeq
-      val outes= out.edges.toSeq
-      if( ines.size > 1 ) println( "WARNING : Filter is connected to more than one input!" )
-      if( verbose && outes.nonEmpty ) println( "" + new java.util.Date() + " " + out + " ~/> " + outes.map( _.in ))
-      outes.foreach( oute => {
-//         if( verbose ) println( "" + out + " ~/> " + oute.in )
-         out ~/> oute.in
-      })
-      ines.headOption.foreach( ine => {
-         if( verbose ) println( "" + new java.util.Date() + " " + ine.out + " ~> " + outes.map( _.in ))
-         outes.foreach( oute => {
-//            if( verbose ) println( "" + ine.out + " ~> " + oute.in )
-            ine.out ~> oute.in
-         })
-      })
-      // XXX tricky: this needs to be last, so that
-      // the pred out's bus isn't set to physical out
-      // (which is currently not undone by AudioBusImpl)
-      if( verbose && ines.nonEmpty ) println( "" + new java.util.Date() + " " + ines.map( _.out ) + " ~/> " + in ) 
-      ines.foreach( ine => {
-         ine.out ~/> in
-      })
-      proc.dispose
-   }
-
-   // XXX copied from Nuages. we should have this going into SoundProcesses directly somehow
-   private def disposeGenDiff( proc: Proc )( implicit tx: ProcTxn ) {
-//      val toDispose = MSet.empty[ Proc ]
-//      addToDisposal( toDispose, proc )
-//      toDispose.foreach( p => {
-val p = proc
-         val ines = p.audioInputs.flatMap( _.edges ).toSeq // XXX
-         val outes= p.audioOutputs.flatMap( _.edges ).toSeq // XXX
-         outes.foreach( oute => oute.out ~/> oute.in )
-         ines.foreach( ine => ine.out ~/> ine.in )
-         p.dispose
+   val FADEOUT = 20
+//
+//   private val stopAndDisposeListener = new Proc.Listener {
+//      def updated( u: Proc.Update ) {
+//         if( !u.state.fading && (!u.state.playing || u.state.bypassed) ) {
+//            // XXX workaround: CCSTM still has the previous txn visible,
+//            // hence we need to wait a bit longer :-(
+////EventQueue.invokeLater { new Runnable { def run {
+//            if( verbose ) println( "" + new java.util.Date() + " FINAL-DISPOSE " + u.proc )
+//            disposeProc( u.proc ) // ProcTxn.atomic { implicit tx => }
+////}}}
+//         }
+//      }
+//   }
+//
+//   private def disposeProc( proc: Proc ) {
+//      ProcTxn.atomic { implicit t =>
+//         proc.anatomy match {
+//            case ProcFilter => disposeFilter( proc )
+//            case _ => disposeGenDiff( proc )
+//         }
+//      }
+//   }
+//
+//   // XXX copied from Nuages. we should have this going into SoundProcesses directly somehow
+//   private def disposeFilter( proc: Proc )( implicit tx: ProcTxn ) {
+//      val in   = proc.audioInput( "in" )
+//      val out  = proc.audioOutput( "out" )
+//      val ines = in.edges.toSeq
+//      val outes= out.edges.toSeq
+//      if( ines.size > 1 ) println( "WARNING : Filter is connected to more than one input!" )
+//      if( verbose && outes.nonEmpty ) println( "" + new java.util.Date() + " " + out + " ~/> " + outes.map( _.in ))
+//      outes.foreach( oute => {
+////         if( verbose ) println( "" + out + " ~/> " + oute.in )
+//         out ~/> oute.in
 //      })
-   }
-   
-   private def stopAndDispose( rp: RunningProc )( implicit tx: ProcTxn ) {
-      val p     = rp.proc
-      val state = p.state
-//println( "STOP-AND-DISPOSE " + p + " -> " + state + " / " + tx.transit )
-      if( !state.fading && (!state.playing || state.bypassed || (tx.transit == Instant)) ) {
-//println( ".......INSTANT" )
-         p.dispose
-      } else {
-         p.addListener( stopAndDisposeListener )
-         p.anatomy match {
-            case ProcFilter => {
-//println( ".......BYPASS" )
-               p.bypass
-            }
-            case _ => {
-//println( ".......STOP " + (new java.util.Date()) )
-               p.stop
-            }
-         }
-      }
-   }
+//      ines.headOption.foreach( ine => {
+//         if( verbose ) println( "" + new java.util.Date() + " " + ine.out + " ~> " + outes.map( _.in ))
+//         outes.foreach( oute => {
+////            if( verbose ) println( "" + ine.out + " ~> " + oute.in )
+//            ine.out ~> oute.in
+//         })
+//      })
+//      // XXX tricky: this needs to be last, so that
+//      // the pred out's bus isn't set to physical out
+//      // (which is currently not undone by AudioBusImpl)
+//      if( verbose && ines.nonEmpty ) println( "" + new java.util.Date() + " " + ines.map( _.out ) + " ~/> " + in )
+//      ines.foreach( ine => {
+//         ine.out ~/> in
+//      })
+//      proc.dispose
+//   }
+//
+//   // XXX copied from Nuages. we should have this going into SoundProcesses directly somehow
+//   private def disposeGenDiff( proc: Proc )( implicit tx: ProcTxn ) {
+////      val toDispose = MSet.empty[ Proc ]
+////      addToDisposal( toDispose, proc )
+////      toDispose.foreach( p => {
+//val p = proc
+//         val ines = p.audioInputs.flatMap( _.edges ).toSeq // XXX
+//         val outes= p.audioOutputs.flatMap( _.edges ).toSeq // XXX
+//         outes.foreach( oute => oute.out ~/> oute.in )
+//         ines.foreach( ine => ine.out ~/> ine.in )
+//         p.dispose
+////      })
+//   }
+//
+//   private def stopAndDispose( rp: RunningProc )( implicit tx: ProcTxn ) {
+//      val p     = rp.proc
+//      val state = p.state
+////println( "STOP-AND-DISPOSE " + p + " -> " + state + " / " + tx.transit )
+//      if( !state.fading && (!state.playing || state.bypassed || (tx.transit == Instant)) ) {
+////println( ".......INSTANT" )
+//         p.dispose
+//      } else {
+//         p.addListener( stopAndDisposeListener )
+//         p.anatomy match {
+//            case ProcFilter => {
+////println( ".......BYPASS" )
+//               p.bypass
+//            }
+//            case _ => {
+////println( ".......STOP " + (new java.util.Date()) )
+//               p.stop
+//            }
+//         }
+//      }
+//   }
 
    abstract class GroupManager( name: String, contextSet: Set[ SoundContext ]) {
 //      var verbose = true
@@ -142,6 +145,10 @@ val p = proc
 
       protected def insertAndPlay( newRunning: ISet[ RunningProc ], rp: RunningProc, fdt: Double )( implicit tx: ProcTxn ) : Unit
 
+      def stageChange( newScale: Double )( implicit tx: ProcTxn ) {
+         stageChange( Some( lastScaleRef() ), Some( newScale ))
+      }
+
       def stageChange( oldStage: Option[ Double ], newStage: Option[ Double ])( implicit tx: ProcTxn ) {
          newStage foreach { scale =>
             val newTime = System.currentTimeMillis * 0.001 // tx.time
@@ -154,7 +161,16 @@ val p = proc
             val oldScale = lastScaleRef.swap( scale )
             scaleAccumRef += dt * oldScale
          }
-         validRef.set( newStage.isDefined )
+         val isActive = newStage.isDefined 
+         validRef.set( isActive )
+         if( !isActive ) stopAll
+      }
+
+      private def stopAll( implicit tx: ProcTxn ) {
+         val toStop = procsRunningRef.swap( Set.empty )
+         toStop foreach { rp =>
+            ProcHelper.stopAndDispose( FADEOUT, rp.proc )
+         }
       }
 
       def update {
@@ -184,11 +200,17 @@ val p = proc
             rp.deathTime <= now || rp.context.scaleStart > scale || rp.context.scaleStop < scale
          }
          var newRunning = procsRunning -- toStop
-         toStop foreach { rp => xfade( exprand( rp.context.minFade, rp.context.maxFade )) {
+//         toStop foreach { rp => xfade( exprand( rp.context.minFade, rp.context.maxFade )) {
+//            if( verbose ) println( "" + new java.util.Date() + " STOPPING OBSOLETE " + rp )
+//                  stopAndDispose( rp )
+//   //         rp.proc.dispose // stop
+//         }}
+
+         toStop foreach { rp =>
             if( verbose ) println( "" + new java.util.Date() + " STOPPING OBSOLETE " + rp )
-            stopAndDispose( rp )
-   //         rp.proc.dispose // stop
-         }}
+            ProcHelper.stopAndDispose( exprand( rp.context.minFade, rp.context.maxFade ), rp.proc )
+         }
+
          val (minProcs0, maxProcs0) = newRunning.foldLeft( (1, Int.MaxValue) ) { (v, rp) =>
             val (min, max) = v
             (math.max( min, rp.context.minConc ), math.min( max, rp.context.maxConc ))
@@ -206,10 +228,11 @@ val p = proc
                val weightSum = newRunning.foldLeft( 0.0 ) { (sum, rp) => sum + rp.context.weight }
                val rp = wchoose( newRunning ) { rp => rp.context.weight / weightSum }
                if( verbose ) println( "" + new java.util.Date() + " STOPPING (CROWDED) " + rp )
-               xfade( exprand( rp.context.minFade, rp.context.maxFade )) {
-                  stopAndDispose( rp )
-   //               rp.proc.dispose /* stop */
-               }
+//               xfade( exprand( rp.context.minFade, rp.context.maxFade )) {
+//                  stopAndDispose( rp )
+//   //               rp.proc.dispose /* stop */
+//               }
+               ProcHelper.stopAndDispose( exprand( rp.context.minFade, rp.context.maxFade ), rp.proc )
                newRunning -= rp
             } else {
                keepGoing = false
@@ -240,10 +263,14 @@ val p = proc
    case class RunningProc( proc: Proc, context: SoundContext, startTime: Long, deathTime: Long )
 }
 
-class ProcessManager {
+trait MeditChaosProcess extends CupolaDistProcess {
+   protected def lo: Double
+   protected def hi: Double
+
    import Util._
-   import ProcessManager._
-   
+   import MeditChaosProcess._
+
+   private val activeRef = Ref( false )
    val timer = new Timer()
 
    val inputManager = new GroupManager( "Input", Material.all.toSet ) {
@@ -283,8 +310,39 @@ class ProcessManager {
       res
    }
 
-   def stageChange( oldStage: Option[ Double ], newStage: Option[ Double ])( implicit tx: ProcTxn ) {
+   private def stageChange( oldStage: Option[ Double ], newStage: Option[ Double ])( implicit tx: ProcTxn ) {
       inputManager.stageChange( oldStage, newStage )
       filterManager.stageChange( oldStage, newStage )
    }
+   def active( implicit tx: ProcTxn ) = activeRef()
+   def active_=( onOff: Boolean )( implicit tx: ProcTxn ) {
+      val wasActive = activeRef.swap( onOff )
+      if( wasActive == onOff ) return
+      if( onOff ) {
+         stageChange( None, Some( lo ))
+      } else {
+         stageChange( Some( lo ), None )
+      }
+   }
+
+   def distChanged( newDist: Double )( implicit tx: ProcTxn ) {
+      if( active ) {
+         import synth._
+         val scale = newDist.linlin( 0.0, 1.0, lo, hi )
+         inputManager.stageChange( scale )
+         filterManager.stageChange( scale )
+      }
+   }
+}
+
+class MeditProcess extends MeditChaosProcess {
+   def name = "medit"
+   def lo = 0.0
+   def hi = 0.5
+}
+
+class ChaosProcess extends MeditChaosProcess {
+   def name = "chaos"
+   def lo = 1.0
+   def hi = 0.5
 }
