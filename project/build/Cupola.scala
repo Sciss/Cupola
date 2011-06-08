@@ -5,14 +5,19 @@ import sbt.{ FileUtilities => FU, _}
  *    @version 0.12, 18-Aug-10
  */
 class CupolaProject( info: ProjectInfo ) extends ProguardProject( info ) {
-   val wolkenpumpe   = "de.sciss" %% "wolkenpumpe" % "0.20"
+   val wolkenpumpe   = "de.sciss" %% "wolkenpumpe" % "0.25"
 
-   // for some reason, snapshot release are not propagated properly through
-   // the dependancies, we need to explicitly repeat them (or their repos) here...
-   val ccstm      = "edu.stanford.ppl" % "ccstm" % "0.2.2-for-scala-2.8.0-SNAPSHOT"
-   val ccstmRepo  = "CCSTM Release Repository at PPL" at "http://ppl.stanford.edu/ccstm/repo-releases"
-   val ccstmSnap  = "CCSTM Snapshot Repository at PPL" at "http://ppl.stanford.edu/ccstm/repo-snapshots"
-   val prefuse    = "prefuse" % "prefuse" % "beta-SNAPSHOT" from "http://github.com/downloads/Sciss/ScalaColliderSwing/prefuse-beta-SNAPSHOT.jar"
+//   val prefuse             = "prefuse" % "prefuse" % "beta-SNAPSHOT" from "http://github.com/downloads/Sciss/ScalaColliderSwing/prefuse-beta-SNAPSHOT.jar"
+
+   // for some reason, we need to add the jsyntaxpane repo here again...
+   val repo1               = "Clojars Repository" at "http://clojars.org/repo"
+
+//   // for some reason, snapshot release are not propagated properly through
+//   // the dependancies, we need to explicitly repeat them (or their repos) here...
+//   val ccstm      = "edu.stanford.ppl" % "ccstm" % "0.2.2-for-scala-2.8.0-SNAPSHOT"
+//   val ccstmRepo  = "CCSTM Release Repository at PPL" at "http://ppl.stanford.edu/ccstm/repo-releases"
+//   val ccstmSnap  = "CCSTM Snapshot Repository at PPL" at "http://ppl.stanford.edu/ccstm/repo-snapshots"
+//   val prefuse    = "prefuse" % "prefuse" % "beta-SNAPSHOT" from "http://github.com/downloads/Sciss/ScalaColliderSwing/prefuse-beta-SNAPSHOT.jar"
 
    val camelCaseName          = "Cupola"
    def appBundleName          = camelCaseName + ".app"
@@ -58,14 +63,16 @@ class CupolaProject( info: ProjectInfo ) extends ProguardProject( info ) {
       FU.clean( cleanPaths.get, quiet, log )
 
       for( fromPath <- jarsPath.get ) {
-         val versionedName = fromPath.asFile.getName
-         val plainName     = versionedName match {
-            case versionedNamePattern( name ) if( name != "scala" ) => name + jarExt
-            case n => n
+         val vName = fromPath.asFile.getName
+         if( !vName.contains( "-javadoc" ) && !vName.contains( "-sources" )) {
+            val plainName     = vName match {
+               case versionedNamePattern( name ) if( name != "scala" ) => name + jarExt
+               case n => n
+            }
+            val toPath = javaPath / plainName
+            log.log( if(quiet) Level.Debug else Level.Info, "Copying to file " + toPath.asFile )
+            FU.copyFile( fromPath, toPath, log )
          }
-         val toPath = javaPath / plainName
-         log.log( if(quiet) Level.Debug else Level.Info, "Copying to file " + toPath.asFile )
-         FU.copyFile( fromPath, toPath, log )
       }
 
 // plist is a real shitty format. we will need apache commons configuration

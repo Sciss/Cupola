@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import java.util.{Timer, TimerTask}
 import java.io.{EOFException, RandomAccessFile, File}
 import de.sciss.osc.{OSCBundle, OSCPacket, OSCPacketCodec}
+import sys.error
 
 class OSCPlayer( file: File, codec: OSCPacketCodec ) {
    player =>

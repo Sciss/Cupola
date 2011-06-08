@@ -30,6 +30,7 @@ package de.sciss.cupola
 
 import de.sciss.synth.swing.{ NodeTreePanel, ServerStatusPanel }
 import actors.{ Actor, DaemonActor, OutputChannel }
+import collection.immutable.{ IndexedSeq => IIdxSeq }
 import collection.mutable.{ HashSet => MHashSet }
 import java.awt.{GraphicsEnvironment, EventQueue}
 import de.sciss.synth._
@@ -310,7 +311,9 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
          new AudioBus( s, MASTER_OFFSET, MASTER_NUMCHANNELS )
       }
       val soloBus    = Bus.audio( s, 2 )
-      config         = NuagesConfig( s, Some( masterBus ), Some( soloBus ), Some( REC_PATH ))
+      val masterChans   = IIdxSeq.tabulate( masterBus.numChannels )( _ + masterBus.index )
+      val soloChans     = IIdxSeq.tabulate( soloBus.numChannels )( _ + soloBus.index )
+      config         = NuagesConfig( s, Some( masterChans ), Some( soloChans ), Some( REC_PATH ))
       val f          = new NuagesFrame( config )
       f.panel.display.setHighQuality( NUAGES_ANTIALIAS )
       f.setSize( 640, 480 )

@@ -6,6 +6,7 @@ import de.sciss.synth.ugen._
 import de.sciss.synth.proc._
 import Util._
 import Cupola._
+import sys.error
 
 case class SoundContext( name: String, settings: SoundSettings,
                          scaleStart: Double, scaleStop: Double, weight: Double,

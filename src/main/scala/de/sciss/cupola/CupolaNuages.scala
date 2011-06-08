@@ -62,7 +62,8 @@ object CupolaNuages extends {
 
       val goAll = diff( "O-all" ) {
          val pamp  = pAudio( "amp", ParamSpec( 0.01, 10, ExpWarp ), 1 )
-         val pout  = pAudioOut( "out", Cupola.config.masterBus.map( RichBus.wrap( _ )))
+//         val pout  = pAudioOut( "out", Cupola.config.masterBus.map( RichBus.wrap( _ )))
+         val pout  = pAudioOut( "out", Some( RichBus.wrap( Cupola.masterBus )))
 
          graph { in =>
             val sig          = (in * Lag.ar( pamp.ar, 0.1 )).outputs
@@ -78,7 +79,8 @@ object CupolaNuages extends {
          val prota   = pControl( "rota", ParamSpec( 0.0, 1.0 ), 0.0 )
          val pbase   = pControl( "azi",  ParamSpec( 0.0, 360.0 ), 0.0 )
          val pamp    = pAudio( "amp", ParamSpec( 0.01, 10, ExpWarp ), 1 )
-         val pout    = pAudioOut( "out", Cupola.config.masterBus.map( RichBus.wrap( _ )))
+//         val pout    = pAudioOut( "out", Cupola.config.masterBus.map( RichBus.wrap( _ )))
+         val pout    = pAudioOut( "out", Some( RichBus.wrap( Cupola.masterBus )))
 
          graph { in =>
             val baseAzi       = Lag.kr( pbase.kr, 0.5 ) + IRand( 0, 360 )
@@ -120,7 +122,8 @@ object CupolaNuages extends {
          val pfreq = pControl( "freq", ParamSpec( 0.01, 10, ExpWarp ), 0.1 )
          val ppow  = pControl( "pow", ParamSpec( 1, 10 ), 2 )
          val plag  = pControl( "lag", ParamSpec( 0.1, 10 ), 1 )
-         val pout  = pAudioOut( "out", Cupola.config.masterBus.map( RichBus.wrap( _ )))
+//         val pout  = pAudioOut( "out", Cupola.config.masterBus.map( RichBus.wrap( _ )))
+         val pout  = pAudioOut( "out", Some( RichBus.wrap( Cupola.masterBus )))
 
          graph { in =>
             val sig          = (in * Lag.ar( pamp.ar, 0.1 )).outputs
