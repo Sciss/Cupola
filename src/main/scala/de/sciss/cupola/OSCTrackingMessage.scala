@@ -13,32 +13,34 @@ case class OSCTrackingMessage( pointX: Int, pointY: Int, eyeLX: Int, eyeLY: Int,
                             pupLX: Int, pupLY: Int, pupRX: Int, pupRY: Int, blinkL: Int, blinkR: Int, state: Int )
 extends OSCMessage( "/t", pointX, pointY, eyeLX, eyeLY, eyeRX, eyeRY, pupLX, pupLY, pupRX, pupRY, blinkL, blinkR, state )
 
-case class OSCStageMessage( id: Int ) extends OSCMessage( "/stage", id )
+case class OSCStageMessage( id: Int, _dunno: Float ) extends OSCMessage( "/stage_data", id, _dunno )
 case class OSCDistMessage( value: Float ) extends OSCMessage( "/dist", value )
 case class OSCTrigMessage( id: Int ) extends OSCMessage( "/trig", id )
 
 object OSCTrackingCodec extends OSCPacketCodec {
    private def decodeStage( b: ByteBuffer ) : OSCMessage = {
-      // ",i"
-      if( (b.getShort() != 0x2C69) ) decodeFail
-		OSCPacket.skipToValues( b )
-      val id = b.getInt()
-      OSCStageMessage( id )
+      // ",if"
+//      if( (b.getShort != 0x2C69) ) decodeFail
+      if( (b.getInt != 0x2C696600) ) decodeFail
+//		OSCPacket.skipToValues( b )
+      val id      = b.getInt
+      val _dunno  = b.getFloat
+      OSCStageMessage( id, _dunno )
    }
 
    private def decodeDist( b: ByteBuffer ) : OSCMessage = {
       // ",f"
-      if( (b.getShort() != 0x2C66) ) decodeFail
+      if( (b.getShort != 0x2C66) ) decodeFail
       OSCPacket.skipToValues( b )
-      val value = b.getFloat()
+      val value = b.getFloat
       OSCDistMessage( value )
    }
 
    private def decodeTrig( b: ByteBuffer ) : OSCMessage = {
       // ",i"
-      if( (b.getShort() != 0x2C69) ) decodeFail
+      if( (b.getShort != 0x2C69) ) decodeFail
 		OSCPacket.skipToValues( b )
-      val id = b.getInt()
+      val id = b.getInt
       OSCTrigMessage( id )
    }
 
@@ -46,24 +48,24 @@ object OSCTrackingCodec extends OSCPacketCodec {
 //      // ",ffiiiii iiiiii"
 //      if( (b.getLong() != 0x2C66666969696969L) || (b.getInt() != 0x69696969) || (b.getShort() != 0x6969) ) decodeFail
          // ",ffiiiii iiiiii"
-         if( (b.getLong() != 0x2C69696969696969L) || (b.getInt() != 0x69696969) || (b.getShort() != 0x6969) ) decodeFail
+         if( (b.getLong != 0x2C69696969696969L) || (b.getInt != 0x69696969) || (b.getShort != 0x6969) ) decodeFail
          OSCPacket.skipToValues( b )
 
 //      val pointX        = b.getFloat()
 //      val pointY        = b.getFloat()
-         val pointX        = b.getInt()
-         val pointY        = b.getInt()
-         val eyeLX         = b.getInt()
-         val eyeLY         = b.getInt()
-         val eyeRX         = b.getInt()
-         val eyeRY         = b.getInt()
-         val pupLX         = b.getInt()
-         val pupLY         = b.getInt()
-         val pupRX         = b.getInt()
-         val pupRY         = b.getInt()
-         val blinkL        = b.getInt()
-         val blinkR        = b.getInt()
-         val state         = b.getInt()
+         val pointX        = b.getInt
+         val pointY        = b.getInt
+         val eyeLX         = b.getInt
+         val eyeLY         = b.getInt
+         val eyeRX         = b.getInt
+         val eyeRY         = b.getInt
+         val pupLX         = b.getInt
+         val pupLY         = b.getInt
+         val pupRX         = b.getInt
+         val pupRY         = b.getInt
+         val blinkL        = b.getInt
+         val blinkR        = b.getInt
+         val state         = b.getInt
 
 		OSCTrackingMessage( pointX, pointY, eyeLX, eyeLY, eyeRX, eyeRY, pupLX, pupLY, pupRX, pupRY, blinkL, blinkR, state )
 	}
@@ -72,7 +74,7 @@ object OSCTrackingCodec extends OSCPacketCodec {
       name match {
          case "/dist"   => decodeDist( b )
          case "/trig"   => decodeTrig( b )
-         case "/stage"  => decodeStage( b )
+         case "/stage_data"  => decodeStage( b )
          case "/t"      => decodeTracking( b )
          case _         => super.decodeMessage( name, b )
       }

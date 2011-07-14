@@ -42,13 +42,8 @@ import java.net.{InetSocketAddress, SocketAddress}
 import java.util.Properties
 import java.io.{FileOutputStream, FileInputStream, File, RandomAccessFile}
 
-//case class CupolaUpdate( stage: Option[ (Level, Section) ])
-//case class CupolaUpdate( stage: Option[ Double ])
 case class CupolaUpdate( stage: Option[ Stage ], dist: Option[ Double ])
 
-/**
- *    @version 0.13, 10-Oct-10
- */
 object Cupola extends TxnModel[ CupolaUpdate ] {
 
    type Update    = CupolaUpdate
@@ -63,7 +58,7 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
       if( file.isFile ) {
          val is = new FileInputStream( file )
          prop.loadFromXML( is )
-         is.close
+         is.close()
       } else {
          prop.setProperty( PROP_BASEPATH,
             new File( new File( System.getProperty( "user.home" ), "Desktop" ), "Cupola" ).getAbsolutePath )
@@ -72,7 +67,7 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
                "devel" ), "SuperCollider3" ), "common" ), "build" ).getAbsolutePath )
          val os = new FileOutputStream( file )
          prop.storeToXML( os, "Cupola Settings" )
-         os.close
+         os.close()
       }
       prop
    }
@@ -102,8 +97,8 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
    private var vis: TrackingVis = null
    @volatile var trackingDefeated = false
 
-   private var stageRef: Ref[ Stage ] = Ref( IdleStage ) // Ref[ (Level, Section) ]( UnknownLevel -> Section1 )
-   private var distRef = Ref( 0.0 )
+   private val stageRef: Ref[ Stage ] = Ref( IdleStage ) // Ref[ (Level, Section) ]( UnknownLevel -> Section1 )
+   private val distRef = Ref( 0.0 )
 
    private val trackingAddr      = new InetSocketAddress( "127.0.0.1", TRACKING_PORT )
    private val tracking          = {
@@ -112,33 +107,8 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
       res.target = trackingAddr
       if( TRACKING_CONNECT ) res.start
       res
-//      val res = JOSCServer.newUsing( TRACKING_PROTO, TRACKING_PORT, TRACKING_LOOP )
-//      res.addOSCListener( new JOSCListener {
-//         def messageReceived( jmsg: JOSCMessage, addr: SocketAddress, time: Long ) {
-//            val args = (0 until jmsg.getArgCount()) map { i => jmsg.getArg( i ) /* match {
-//               case f: java.lang.Float    => f.floatValue
-//               case i: java.lang.Integer  => i.intValue
-//               case x => x
-//            } */
-//            }
-//            val msg  = OSCMessage( jmsg.getName(), args: _* )
-//            Cupola.messageReceived( msg, addr, time )
-//         }
-//      })
-//      res.dumpOSC( 1, System.out )
-//      res.start()
-//      res
    }
    private val trackingLocalAddr = tracking.localAddress
-
-//   private val simulator         = {
-//      val trns = OSCTransmitter( TRACKING_PROTO )
-//      trns.target = tracking.getLocalAddress() // tracking.localAddress
-////      trns.dumpOSC( 1, System.out )
-//      trns.connect
-//      trns
-//   }
-//   private val listeners         = new MHashSet[ OutputChannel[ Any ]]
 
    val options          = {
       val o = new ServerOptionsBuilder()
@@ -165,30 +135,14 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
    @volatile var config: NuagesConfig = _
 
    def main( args: Array[ String ]) {
-//      s.options.programPath.value = "/Users/rutz/Documents/devel/fromSVN/SuperCollider3/common/build/scsynth"
-//      s.addDoWhenBooted( this ! Run ) // important: PlainServer executes this in the OSC receiver thread, so fork!
-//      start
-      guiRun { init }
+      guiRun { init() }
    }
-
-//   private def initGUI {
-//      val sspw = new ServerStatusPanel( s ).makeWindow
-//      val ntp  = new NodeTreePanel( s )
-//      val ntpw = ntp.makeWindow
-//      ntpw.setLocation( sspw.getX, sspw.getY + sspw.getHeight + 32 )
-//      val sif  = new ScalaInterpreterFrame( s, ntp )
-//      sif.setLocation( sspw.getX + sspw.getWidth + 32, sif.getY )
-//
-//      sspw.setVisible( true )
-//      ntpw.setVisible( true )
-//      sif.setVisible( true )
-//   }
 
    protected def emptyUpdate = CupolaUpdate( None, None )
    protected def fullUpdate( implicit tx: ProcTxn ) = CupolaUpdate( Some( stageRef() ), Some( distRef() ))
 
    def guiRun( code: => Unit ) {
-      EventQueue.invokeLater( new Runnable { def run = code })
+      EventQueue.invokeLater( new Runnable { def run() { code }})
    }
 
 //   def simulate( msg: OSCMessage ) { simulator ! msg }
@@ -237,7 +191,7 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
 //         }
 //         case OSCMessage( "/cupola", "state", scale: Float ) => stageChange( Some( scale.toDouble ))
          case OSCDistMessage( dist ) => ProcTxn.spawnAtomic { implicit tx => distChange( dist )}
-         case OSCStageMessage( stageID ) =>
+         case OSCStageMessage( stageID, _dunno ) =>
             Stage.all.find( _.id == stageID ) match {
                case Some( stage ) => ProcTxn.spawnAtomic { implicit tx => stageChange( stage )}
                case None => println( "!! Cupola: Ignoring illegal stage ID " + stageID ) 
@@ -265,7 +219,7 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
       pm.distChange( newDist )
    }
 
-   def init {
+   def init() {
       // prevent actor starvation!!!
       // --> http://scala-programming-language.1934581.n4.nabble.com/Scala-Actors-Starvation-td2281657.html
       System.setProperty( "actors.enableForkJoin", "false" )
@@ -301,10 +255,10 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
             if( SHOW_VIS ) vis = new TrackingVis
          }
       }
-      Runtime.getRuntime().addShutdownHook( new Thread { override def run = shutDown })
+      Runtime.getRuntime.addShutdownHook( new Thread { override def run() { shutDown }})
    }
 
-   private def initNuages {
+   private def initNuages() {
       masterBus  = if( INTERNAL_AUDIO ) {
          new AudioBus( s, 0, 2 )
       } else {
@@ -317,7 +271,7 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
       val f          = new NuagesFrame( config )
       f.panel.display.setHighQuality( NUAGES_ANTIALIAS )
       f.setSize( 640, 480 )
-      f.setLocation( ((SCREEN_BOUNDS.width - f.getWidth()) >> 1) + 100, 10 )
+      f.setLocation( ((SCREEN_BOUNDS.width - f.getWidth) >> 1) + 100, 10 )
       f.setVisible( true )
       support.nuages = f
       ProcTxn.atomic { implicit tx =>
@@ -327,9 +281,9 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
       }
    }
 
-   def quit { System.exit( 0 )}
+   def quit() { sys.exit( 0 )}
 
-   private def shutDown { // sync.synchronized { }
+   private def shutDown() { // sync.synchronized { }
       if( (s != null) && (s.condition != Server.Offline) ) {
          s.quit
          s = null

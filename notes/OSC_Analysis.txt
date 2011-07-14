@@ -1,0 +1,29 @@
+/stage_data, 1, 0.6
+/user_movement, 571, 315, 0, 0
+/raster_data, 124, 124, 124
+...
+/limbo_data, 315.7737, False, 0
+/particle_data, 1, 25, 0.43, 0.95, 0.98
+/particle_data, 2, 25, 0.43, 0.95, 0.98
+...
+/elysium_data, False
+/stage_data, 0, 0.701
+
+/limbo_data, 15.52417, True, 1
+/limbo_data, 24.73863, True, 2
+
+
+raster_data
+- seems to be increasing
+
+user_movement
+- last two values seem to be 0 always
+
+stage_data
+- first one is tage
+   1 = calib
+   2 = limbo
+
+particle_data
+- first seems to be incremental (id if the particle? never goes back)
+

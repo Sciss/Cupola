@@ -38,9 +38,6 @@ import javax.swing.event.{MouseInputAdapter, ChangeEvent, ChangeListener}
 import java.awt.event._
 import java.awt._
 
-/**
- *    @version 0.13, 10-Oct-10
- */
 class GUI extends Cupola.Listener {
    gui =>
 
@@ -54,7 +51,7 @@ class GUI extends Cupola.Listener {
    private val ggLimbo    = makeButton( LimboStage )
    private val ggFinal    = makeButton( FinalStage )
    private val ggMap: Map[ Stage, StageButton ] =
-      Seq( ggIdle, ggCalib, ggHidden, ggMedit, ggChaos, ggEqui, ggLimbo, ggFinal ).map( but => but.stage -> but)( breakOut)
+      Seq( ggIdle, ggCalib, ggHidden, ggMedit, ggChaos, ggEqui, ggLimbo, ggFinal ).map( but => but.stage -> but)( breakOut )
 
    val ggLevel = {
       val res = new Slider
@@ -109,8 +106,7 @@ class GUI extends Cupola.Listener {
 
       f.addWindowListener( new WindowAdapter {
          override def windowClosing( e: WindowEvent ) {
-//            println( "SENDING QUIT" )
-            Cupola.quit
+            Cupola.quit()
          }
       })
 
@@ -145,8 +141,8 @@ class GUI extends Cupola.Listener {
       cp.add( box, BorderLayout.SOUTH )
       cp.setBackground( Color.black )
       f.setResizable( false )
-      f.pack
-      f.setLocation( 10, Cupola.SCREEN_BOUNDS.height - f.getHeight() - 10 )
+      f.pack()
+      f.setLocation( 10, Cupola.SCREEN_BOUNDS.height - f.getHeight - 10 )
       f.setVisible( true )
    }
 
@@ -155,7 +151,7 @@ class GUI extends Cupola.Listener {
       b.action = () => {
          val allowed = selectedBut.map( _.stage.transits.contains( stage )).getOrElse( false )
          if( allowed ) {
-            Cupola.simulateBoth( OSCStageMessage( stage.id ))
+            Cupola.simulateBoth( OSCStageMessage( stage.id, 0f ))
          }
       }
       b
@@ -202,8 +198,8 @@ class GUI extends Cupola.Listener {
       })
 
       override def paintComponent( g: Graphics ) {
-         g.setColor( getBackground() )
-         g.fillRect( 0, 0, getWidth(), getHeight() )
+         g.setColor( getBackground )
+         g.fillRect( 0, 0, getWidth, getHeight )
          super.paintComponent( g )
       }
    }
@@ -223,8 +219,8 @@ class GUI extends Cupola.Listener {
          override def mousePressed( e: MouseEvent ) { adjust( e )}
          override def mouseDragged( e: MouseEvent ) { adjust( e )}
          def adjust( e: MouseEvent ) {
-            val i = getInsets()
-            val v = math.max( 0.0, math.min( 1.0, (e.getX() - i.left).toDouble / (getWidth() - (i.left + i.right)) ))
+            val i = getInsets
+            val v = math.max( 0.0, math.min( 1.0, (e.getX - i.left).toDouble / (getWidth - (i.left + i.right)) ))
             action( v )
          }
       }
@@ -238,11 +234,11 @@ class GUI extends Cupola.Listener {
       setForeground( Color.white )
 
       override def paintComponent( g: Graphics ) {
-         g.setColor( getBackground() )
-         g.fillRect( 0, 0, getWidth(), getHeight() )
-         g.setColor( getForeground() )
-         val i = getInsets()
-         g.fillRect( i.left, i.top, ((getWidth() - (i.left + i.right)) * valueVar).toInt, getHeight() - (i.top + i.bottom) )
+         g.setColor( getBackground )
+         g.fillRect( 0, 0, getWidth, getHeight )
+         g.setColor( getForeground )
+         val i = getInsets
+         g.fillRect( i.left, i.top, ((getWidth - (i.left + i.right)) * valueVar).toInt, getHeight - (i.top + i.bottom) )
 //         g.setColor( Color.white )
 //         g.drawRect( 0, 0, getWidth() - 1, getHeight() - 1 )
 //         val x = (scale * getWidth()).toInt

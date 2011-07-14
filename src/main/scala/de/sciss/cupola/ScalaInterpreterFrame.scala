@@ -8,6 +8,7 @@ import de.sciss.synth.swing.NodeTreePanel
 import java.awt.event.KeyEvent
 import java.awt.{Toolkit, GraphicsEnvironment}
 import javax.swing._
+import tools.nsc.interpreter.NamedParam
 
 /**
  *    @version 0.11, 04-Jun-10
@@ -29,8 +30,8 @@ extends JFrame( "Scala Interpreter" ) {
       val cp = getContentPane
 
       pane.initialText = pane.initialText +
-"""// Press '""" + KeyEvent.getKeyModifiersText( txnKeyStroke.getModifiers() ) + " + " +
-      KeyEvent.getKeyText( txnKeyStroke.getKeyCode() ) + """' to execute transactionally.
+"""// Press '""" + KeyEvent.getKeyModifiersText( txnKeyStroke.getModifiers ) + " + " +
+      KeyEvent.getKeyText( txnKeyStroke.getKeyCode ) + """' to execute transactionally.
 
 """
 
@@ -47,27 +48,18 @@ import Cupola._
 """
       )
 
-      pane.bindingsCreator = Some( (in: Interpreter ) => {
-//         sync.synchronized {
-//            interpreter = Some( in )
-//println( "bindingsCreator " + inCode.isDefined )
-//            inCode.foreach( _.apply( in ))
-//         }
-         in.bind( "support", classOf[ REPLSupport ].getName, support )
-//         in.bind( "ntp", classOf[ NodeTreePanel ].getName, ntp )
-//         in.bind( "in", classOf[ Interpreter ].getName, in )
-      })
+      pane.customBindings = Seq( NamedParam( "support", support ))
 
       val lp = new LogPane
-      lp.init
+      lp.init()
       pane.out = Some( lp.writer )
       Console.setOut( lp.outputStream )
       Console.setErr( lp.outputStream )
       System.setErr( new PrintStream( lp.outputStream ))
 
-      pane.customKeyMapActions += txnKeyStroke -> (() => txnExecute)
+      pane.customKeyMapActions += txnKeyStroke -> (() => txnExecute())
 
-      pane.init
+      pane.init()
       val sp = new JSplitPane( SwingConstants.HORIZONTAL )
       sp.setTopComponent( pane )
       sp.setBottomComponent( lp )
@@ -83,7 +75,7 @@ import Cupola._
 
    private var txnCount = 0
 
-   def txnExecute {
+   def txnExecute() {
       pane.getSelectedTextOrCurrentLine.foreach( txt => {
          val txnId  = txnCount
          txnCount += 1
