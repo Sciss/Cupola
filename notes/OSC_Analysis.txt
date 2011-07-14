@@ -12,12 +12,19 @@
 /limbo_data, 15.52417, True, 1
 /limbo_data, 24.73863, True, 2
 
+limbo_data
+- last number seems to increase with 'wipes',
+  and boolean is held true for around 500
+  to 1000 ms when the wipe begins
 
 raster_data
 - seems to be increasing
 
 user_movement
 - last two values seem to be 0 always
+- x seems to be 0 to 799 from left to right
+- y seems to be 0 to 599 from top to bottom
+  (i.e. w = 800, h = 600)
 
 stage_data
 - first one is tage

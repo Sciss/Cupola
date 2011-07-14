@@ -1,0 +1,81 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf320
+{\fonttbl\f0\fnil\fcharset0 Verdana;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww13340\viewh16660\viewkind0
+\deftab720
+\pard\pardeftab720\ri380
+
+\f0\fs18 \cf0 (copied from the cupola setup doc as of 14-july-11)
+\b\fs24 \
+\
+Information Sent\
+
+\b0\fs20 \
+The following is a list of data that the visualisation software sends into the network, this data is sent to the audio software and intended entirely for the audio system:\
+\
+/stage_data, <stage>, <state>\
+	stage: integer from 0 to 4, 0 = idle, 1 = calibrating, 2 = limbo, 3 = emotion, 4 = 		elysium\
+	state: float from 0 to 1, 0 = meditative, 1 = chaos\
+when: throughout, whenever these values change\
+\
+/user_movement, <eyeposx>, <eyeposy>, <avghead>, <avgeye> //perhaps decide more when we consider the behaviour interpretation system\
+\pard\pardeftab720\li1701\fi-992\ri380
+\cf0 eyeposx: integer from 0 to resolution width (800) //x co-ordinate of user's vision on screen\
+eyeposy: integer from 0 to resolution height (600) // y co-ordinate of user's vision on screen\
+avghead: float from 0 to largest resolution dimension (so 800) //average head movement over time\
+\pard\pardeftab720\ri380
+\cf0 	avgeye: ditto // average eye movement over time\
+when: throughout, whenever these values change, probably at about 15fps\
+\
+/limbo_data, <distancetotarget>, <ismessagedisplayed>, <scenestraversed>?\
+\pard\pardeftab720\li2552\fi-1843\ri380
+\cf0 distancetotarget: float from 0 to largest resolution dimension (so 800) // distance from current particle emitter to target point which the user has to get it to\
+ismessagedisplay: boolean (if booleans aren't available then integer from 0 to 1) // true if there is a message on screen\
+scenestraversed: integer from 0 to ? //how many limbo scenes the user has managed to complete, dunno if we'll have this one\
+\pard\pardeftab720\ri380
+\cf0 when: only during limbo stage, whenever values change\
+\
+/emotion_data, <isinwritingmode>, <isinswarmtrap>\
+\pard\pardeftab720\li2410\fi-1701\ri380
+\cf0 isinwritingmode: boolean //true if user is making a message, false if user is interacting with swarm\
+\pard\pardeftab720\li2268\fi-1559\ri380
+\cf0 isinswarmtrap: boolean //true if user is looking inside the polygon that traps particles\
+\pard\pardeftab720\ri380
+\cf0 when: only during emotion, whenever values change\
+\
+/elysium_data, <ismessagedisplayed>\
+	ismessagedisplayed: boolean //true if a message is being displayed to the user\
+when: only during elysium, whenever value changes\
+\
+/particle_data, <count>, <speed>, <colourR>, <colourG>, <colourB>\
+	count: integer from 0 to 1000 //number of particles currently present\
+	speed: float from 0 to 1000 //average speed of particles\
+	colourR: integer from 0 to 255 //average red value of particles present\
+	colourG: //ditto with green value\
+	colourB: //ditto with blue value\
+when: throughout, whenever these values change\
+\
+/particle_swarm_data, <minseperation>, <vision>, <maxseperationturn>, <maxalignturn>, <maxcohereturn> \
+\pard\pardeftab720\li2268\fi-1559\ri380
+\cf0 minseperation: integer from 0 to 100 //distance in pixels swarm particles attempt to be from one another\
+\pard\pardeftab720\fi709\ri380
+\cf0 vision: integer from 0 to 500 //how far swarm particles can "see"\
+\pard\pardeftab720\li2835\fi-2126\ri380
+\cf0 maxseperationturn: float 0 to 0.05 //how much the swarm particles can turn in radians in order to seperate from one another within each update loop (so the particle moves this much at about 60fps)\
+\pard\pardeftab720\li2127\fi-1418\ri380
+\cf0 maxalignturn: float 0 to 0.05 //ditto but for the particles trying to face the same direction, out of the swarm variables this one means the most, 0 = fly-like, about 0.0174532925 = bird-like and 0.034906585f = fish-like\
+\pard\pardeftab720\fi709\ri380
+\cf0 maxcohereturn: float 0 to 0.5 //ditto but for the particles trying to move together\
+\pard\pardeftab720\ri380
+\cf0 when: only during emotion, whenever these values change\
+\
+/raster_data, <rateofchange>, <colourR>, <colourG>, <colourB>\
+\pard\pardeftab720\li2268\fi-1559\ri380
+\cf0 rateofchange: float 0 to 1 //the amount of activity and change that is happening upon the background, 0 = still, 1 = all of it is changing\
+\pard\pardeftab720\ri380
+\cf0 	colourR: integer from 0 to 255 //average red value of raster background\
+	colourG: //ditto with green value\
+	colourB: //ditto with blue value\
+\pard\pardeftab720\li709\fi-709\ri380
+\cf0 when: throughout, whenever these values change, as averages are computed constantly probably as fast as the update loop so about 60fps?\
+}
