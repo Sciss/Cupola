@@ -1,13 +1,13 @@
 ## README
 
-An internal project of me, realizing sketches for the Cupola project, but also other stuff. (C)opyright 2010-2013 by Hanns Holger Rutz. All rights reserved. Covered by the GNU General Public License v2+ (see licenses folder).
+Software for the sound composition of the Cupola project. (C)opyright 2010-2013 by Hanns Holger Rutz. All rights reserved. Covered by the GNU General Public License v2+ (see licenses folder).
 
 ### building
 
 Cupola builds with the simple-build-tool (sbt), using Scala 2.10 and multiple open source libraries. Given that you are on OS X (which means that Java 1.6+ is installed), it should be sufficient to run the following command from the terminal
 
-$ cd <pathToCupolaProject>
-$ ./sbt appbundle
+    $ cd <pathToCupolaProject>
+    $ ./sbt appbundle
 
 The result is an OS X application named `Cupola.app` which can be started via double-clicking.
 
