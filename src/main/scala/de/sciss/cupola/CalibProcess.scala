@@ -2,7 +2,7 @@
  *  CalibProcess.scala
  *  (Cupola)
  *
- *  Copyright (c) 2010 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2010-2013 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -36,6 +36,8 @@ import CupolaNuages._
 import DSL._
 
 object CalibProcess {
+//  private def any2stringadd(x: Any) {}  // fucking shit
+
 //   val FADEIN  = 10.0
    val FADEOUT = 10.0
    val GAIN    = -3.0
@@ -71,7 +73,7 @@ class CalibProcess extends CupolaProcess {
 
    def name = "calib"
 
-   private def nextGesture( implicit tx: ProcTxn ) = activeRef() foreach { oldAct =>
+   private def nextGesture( implicit tx: ProcTxn ) { activeRef() foreach { oldAct =>
       val p = oldAct.pgen
       xfade( GESTURE_FADEOUT ) { p.stop }
       if( oldAct.count > 0 ) {
@@ -87,14 +89,14 @@ class CalibProcess extends CupolaProcess {
          xfade( 0.1 ) { p.play }
          glide( GESTURE_DUR ) { p.control( "bal" ).v = pans( pans.size - oldAct.count )}
       }
-   }
+   }}
 
    private def start( implicit tx: ProcTxn ) : Active = {
       val g = (ProcDemiurg.factories.find( _.name == name ) getOrElse gen( name ) {
          val pamp = pAudio( "amp", ParamSpec( 0.001, 10, ExpWarp ), GAIN.dbamp )
          val pstart = pScalar( "start", ParamSpec( 0, 10151294 ), 0 )
          val pdur   = pScalar( "dur", ParamSpec( 1, 20 ), 1 )
-         val pfire  = pScalar( "fire", ParamSpec( 1, 20 ), 1 )
+         /* val pfire  = */ pScalar( "fire", ParamSpec( 1, 20 ), 1 )
          val pgainl = pScalar( "gain-l", ParamSpec( 0.01, 100, ExpWarp ), 1 )
          val pgainr = pScalar( "gain-r", ParamSpec( 0.01, 100, ExpWarp ), 1 )
          val pspeed = pControl( "speed", ParamSpec( 0.1, 10, ExpWarp ), 1 )
@@ -110,8 +112,8 @@ class CalibProcess extends CupolaProcess {
             val sigR = (sig \ 1) * pgainr.ir
             val bal  = pbal.ar
             val mulL = (1 - bal).min( 1 ).squared
-            val mulR = (1 + bal).min( 1 ).squared
-            ((sigL * mulL) :: (sigR * mulR) :: Nil) * pamp.ar
+            val mulR = (Constant(1) + bal).min( 1 ).squared // fucking Predef.any2stringadd
+            (((sigL * mulL) :: (sigR * mulR) :: Nil): GE) * pamp.ar
          }
 
 //         graph {

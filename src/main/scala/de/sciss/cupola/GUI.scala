@@ -2,7 +2,7 @@
  *  GUI.scala
  *  (Cupola)
  *
- *  Copyright (c) 2010 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2010-2013 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -28,15 +28,13 @@
 
 package de.sciss.cupola
 
-import Cupola._
-import actors.Actor
 import collection.breakOut
-import de.sciss.osc.OSCMessage
 import de.sciss.synth.proc.ProcTxn
 import javax.swing._
-import javax.swing.event.{MouseInputAdapter, ChangeEvent, ChangeListener}
+import javax.swing.event.MouseInputAdapter
 import java.awt.event._
 import java.awt._
+import de.sciss.osc
 
 class GUI extends Cupola.Listener {
    gui =>
@@ -65,7 +63,7 @@ class GUI extends Cupola.Listener {
       val res = new JCheckBox()
       res.addActionListener( new ActionListener {
          def actionPerformed( e: ActionEvent ) {
-            Cupola.simulateRemote( OSCMessage( "/dumpOSC", if( res.isSelected ) 1 else 0 ))
+            Cupola.simulateRemote( osc.Message( "/dumpOSC", if( res.isSelected ) 1 else 0 ))
          }
       })
       res.setFocusable( false )
@@ -76,7 +74,7 @@ class GUI extends Cupola.Listener {
       val res = new JCheckBox()
       res.addActionListener( new ActionListener {
          def actionPerformed( e: ActionEvent ) {
-            Cupola.dumpOSC( if( res.isSelected ) 1 else 0 )
+            Cupola.dumpOSC( if( res.isSelected ) osc.Dump.Text else osc.Dump.Off )
          }
       })
       res.setFocusable( false )

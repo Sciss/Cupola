@@ -1,17 +1,19 @@
 package de.sciss.temporal
 
-import collection.mutable.{ HashSet => MHashSet, ListBuffer, PriorityQueue, Queue => MQueue }
+import collection.mutable.ListBuffer
 import actors.{ Actor, TIMEOUT }
 import math._
+import util.control.NonFatal
+import collection.mutable
 
 trait Transport {
 //   def play( obj: Playable ) : Unit
    val sampleRate: Double
    val tickFrames: Long
    def sched( pos: Long, obj: Playable ) : Unit
-   def play : Unit // = play( 0L )
-   def play( offset: Long ) : Unit
-   def stop : Unit
+//   def play : Unit // = play( 0L )
+   def play( offset: Long = 0L ) : Unit
+   def stop() : Unit
 }
 
 class BasicTransport( val sampleRate: Double, val tickFrames: Long )
@@ -25,9 +27,9 @@ extends Actor with Transport {
       this ! Sched( pos, obj )
    }
 
-   def play : Unit = play( 0L )
-   def play( offset: Long ) { trnsp ! Play( offset )}
-   def stop { trnsp ! Stop }
+//   def play : Unit = play( 0L )
+   def play( offset: Long = 0L ) { trnsp ! Play( offset )}
+   def stop() { trnsp ! Stop }
 
    def addPlayer( player: Player ) {
       players.synchronized {
@@ -41,9 +43,9 @@ extends Actor with Transport {
       }
    }
 
-   private val queue = new PriorityQueue[ Executable ]()( ExecutableOrdering )
+   private val queue = new mutable.PriorityQueue[ Executable ]()( ExecutableOrdering )
 
-   def act = loop { react {
+   def act() { loop { react {
       case Play( offset ) => {
          var pos        = offset
          var playing    = true
@@ -58,14 +60,14 @@ extends Actor with Transport {
                   queue += Execute( execPos, obj )
                }
                case TIMEOUT => {
-                  val exec = queue.dequeue
+                  val exec = queue.dequeue()
                   pos = exec.pos
-                  exec.execute
+                  exec.execute()
                }
                case Stop => {
                   playing = false
-                  queue.foreach( _.discarded )
-                  queue.clear
+                  queue.foreach( _.discarded() )
+                  queue.clear()
                   foreachPlayer( _.stop )
                }
                case Play( _ ) => println( "WARNING: Transport already playing" )
@@ -76,13 +78,13 @@ extends Actor with Transport {
       case Sched( _, obj ) => obj.discarded
       case Stop => println( "WARNING: Transport already stopped" )
       case msg => println( "WARNING: Transport received unknown message " + msg )
-   }}
+   }}}
 
    private def foreachPlayer( fun: Player => Unit ) {
       players.synchronized {
          players.foreach( p => try {
             fun( p )
-         } catch { case e => e.printStackTrace })
+         } catch { case NonFatal( e ) => e.printStackTrace() })
       }
    }
 
@@ -97,8 +99,8 @@ extends Actor with Transport {
 
    private abstract sealed class Executable {
       def pos: Long
-      def execute: Unit
-      def discarded: Unit
+      def execute(): Unit
+      def discarded(): Unit
    }
 
    private object ExecutableOrdering extends Ordering[ Executable ] {
@@ -106,11 +108,11 @@ extends Actor with Transport {
    }
 
    private case class Tick( pos: Long ) extends Executable {
-      def execute = tick( pos )
-      def discarded {}
+      def execute() { tick( pos )}
+      def discarded() {}
    }
    private case class Execute( pos: Long, obj: Playable ) extends Executable {
-      def execute    = obj.play( pos )
-      def discarded  = obj.discarded
+      def execute() { obj.play( pos )}
+      def discarded() { obj.discarded }
    }
 }

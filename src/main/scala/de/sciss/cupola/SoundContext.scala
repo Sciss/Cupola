@@ -40,10 +40,10 @@ extends SoundSettings {
             val bufID      = buf.id
             val speed      = pspeed.kr * BufRateScale.ir( bufID )
             val d          = VDiskIn.ar( afSpec.numChannels, bufID, speed, loop = 1 )
-//               val frame   = d.reply
-//               (frame.carry( pspeed.v * b.sampleRate ) / b.numFrames) ~> ppos
-            val liveFrame  = Integrator.ar( K2A.ar( speed ))
-            val livePos    = ((liveFrame / BufFrames.ir( bufID )) + startPos) % 1.0f
+////               val frame   = d.reply
+////               (frame.carry( pspeed.v * b.sampleRate ) / b.numFrames) ~> ppos
+//            val liveFrame  = Integrator.ar( K2A.ar( speed ))
+//            val livePos    = ((liveFrame / BufFrames.ir( bufID )) + startPos) % 1.0f
 //               livePos ~> ppos
             d * pamp.ar
          }

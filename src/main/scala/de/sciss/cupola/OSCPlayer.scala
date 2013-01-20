@@ -3,21 +3,21 @@ package de.sciss.cupola
 import java.nio.ByteBuffer
 import java.util.{Timer, TimerTask}
 import java.io.{EOFException, RandomAccessFile, File}
-import de.sciss.osc.{OSCBundle, OSCPacket, OSCPacketCodec}
 import sys.error
+import de.sciss.osc
 
-class OSCPlayer( file: File, codec: OSCPacketCodec ) {
+class OSCPlayer( file: File, codec: osc.PacketCodec ) {
    player =>
 
    private val raf   = new RandomAccessFile( file, "r" )
-   private val ch    = raf.getChannel()
+   private val ch    = raf.getChannel
    private val bb    = ByteBuffer.allocate( 8192 )
    private val sync  = new AnyRef
    private val timer = new Timer()
 
-   var action: OSCPacket => Unit = p => ()
+   var action: osc.Packet => Unit = p => ()
 
-   private var nextBundle: OSCBundle = null
+   private var nextBundle: osc.Bundle = null
    private var startSysTime = 0L
    private var startBndlTime = 0L
 
@@ -31,31 +31,31 @@ class OSCPlayer( file: File, codec: OSCPacketCodec ) {
 //      }
 //   }
 
-   def start {
+   def start() {
       sync.synchronized {
          raf.seek( 0L )
          nextBundle = readBundle
-         startBndlTime  = OSCBundle.timetagToMillis( nextBundle.timetag )
+         startBndlTime  = nextBundle.timetag.toMillis // osc.Bundle.timetagToMillis( nextBundle.timetag )
          startSysTime   = System.currentTimeMillis
          sched( 0L )
       }
    }
 
-   def stop {
+   def stop() {
       sync.synchronized { timer.cancel() }
    }
 
    private def sched( dt: Long ) {
 //println( "DT = " + dt )
       timer.schedule( new TimerTask {
-         def run = sync.synchronized {
+         def run() { sync.synchronized {
             try {
                var delta = 0L
                do {
                   action( nextBundle )
                   nextBundle = readBundle // may throw EOF
 //println( "nextBundle = " + nextBundle )
-                  val dtBndl = OSCBundle.timetagToMillis( nextBundle.timetag ) - startBndlTime
+                  val dtBndl = nextBundle.timetag.toMillis - startBndlTime // osc.Bundle.timetagToMillis( nextBundle.timetag ) - startBndlTime
                   val dtSys  = System.currentTimeMillis - startSysTime
                   delta = math.max( 0L, dtBndl - dtSys )
 //                  delta = math.max( 0L, OSCBundle.timetagToMillis( nextBundle.timetag ) - startTime )
@@ -66,22 +66,22 @@ class OSCPlayer( file: File, codec: OSCPacketCodec ) {
                case eof: EOFException => // stop
                case e => e.printStackTrace()
             }
-         }
+         }}
       }, dt )
    }
 
-   private def readBundle : OSCBundle = {
+   private def readBundle : osc.Bundle = {
       val size = raf.readInt()
       bb.rewind().limit( size )
       ch.read( bb )
       bb.flip()
       codec.decode( bb ) match {
-         case b: OSCBundle => b
+         case b: osc.Bundle => b
          case _ => error( "Expecting OSC bundles" )
       }
    }
 
-   def close {
-      sync.synchronized { stop; raf.close() }
+   def close() {
+      sync.synchronized { stop(); raf.close() }
    }
 }

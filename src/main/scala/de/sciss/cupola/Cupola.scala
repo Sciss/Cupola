@@ -2,7 +2,7 @@
  *  Cupola.scala
  *  (Cupola)
  *
- *  Copyright (c) 2010 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2010-2013 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -28,19 +28,20 @@
 
 package de.sciss.cupola
 
-import de.sciss.synth.swing.{ NodeTreePanel, ServerStatusPanel }
-import actors.{ Actor, DaemonActor, OutputChannel }
 import collection.immutable.{ IndexedSeq => IIdxSeq }
-import collection.mutable.{ HashSet => MHashSet }
 import java.awt.{GraphicsEnvironment, EventQueue}
-import de.sciss.synth._
-import de.sciss.nuages.{NuagesFrame, NuagesConfig}
+import de.sciss.synth.{osc => sosc, _}
+import de.sciss.nuages.{InterpreterFrame, NuagesFrame, NuagesConfig}
 import proc.{ DSL, ProcDemiurg, ProcTxn, Ref, TxnModel }
 import DSL._
-import de.sciss.osc._
+import de.sciss.osc
 import java.net.{InetSocketAddress, SocketAddress}
 import java.util.Properties
-import java.io.{FileOutputStream, FileInputStream, File, RandomAccessFile}
+import java.io.{FileOutputStream, FileInputStream, File}
+import swing.j.{JServerStatusPanel, JNodeTreePanel}
+import swing.ScalaInterpreterFrame
+import util.control.NonFatal
+import de.sciss.scalainterpreter.NamedParam
 
 case class CupolaUpdate( stage: Option[ Stage ], dist: Option[ Double ])
 
@@ -85,7 +86,7 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
    val MASTER_OFFSET       = 0
    val MIC_OFFSET          = 0
    val TRACKING_PORT       = 1201
-   val TRACKING_PROTO      = TCP
+   val TRACKING_PROTO      = osc.TCP
    val TRACKING_LOOP       = true
    val TRACKING_CONNECT    = false
    val SHOW_VIS            = false
@@ -102,16 +103,19 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
 
    private val trackingAddr      = new InetSocketAddress( "127.0.0.1", TRACKING_PORT )
    private val tracking          = {
-      val res = OSCClient( TRACKING_PROTO, 0, TRACKING_LOOP, OSCTrackingCodec )
+      val cfg = TRACKING_PROTO.Config()
+      cfg.localIsLoopback  = TRACKING_LOOP
+      cfg.codec            = OSCTrackingCodec
+      val res = osc.Client( trackingAddr, cfg.build )
       res.action = messageReceived
-      res.target = trackingAddr
-      if( TRACKING_CONNECT ) res.start
+//      res.target = trackingAddr
+      if( TRACKING_CONNECT ) res.connect()
       res
    }
-   private val trackingLocalAddr = tracking.localAddress
+   private val trackingLocalAddr = tracking.localSocketAddress
 
    val options          = {
-      val o = new ServerOptionsBuilder()
+      val o = Server.Config()
       if( INTERNAL_AUDIO ) {
          o.deviceNames        = Some( "Built-in Microphone" -> "Built-in Output" )
       } else {
@@ -127,12 +131,12 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
       o.build
    }
 
-   val support = new REPLSupport
    val pm      = new ProcessManager2
 
    @volatile var s: Server       = _
    @volatile var booting: ServerConnection = _
    @volatile var config: NuagesConfig = _
+   val support = new REPLSupport
 
    def main( args: Array[ String ]) {
       guiRun { init() }
@@ -146,45 +150,45 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
    }
 
 //   def simulate( msg: OSCMessage ) { simulator ! msg }
-   def simulateRemote( p: OSCPacket ) { try { tracking ! p } catch { case _ => }}
-   def simulateLocal( p: OSCPacket ) {
-      simulateLocal( p, trackingLocalAddr, System.currentTimeMillis )
+   def simulateRemote( p: osc.Packet ) { try { tracking ! p } catch { case NonFatal( _ ) => }}
+   def simulateLocal( p: osc.Packet ) {
+      simulateLocal( p, trackingLocalAddr, osc.Timetag.millis( System.currentTimeMillis ))
    }
-   private def simulateLocal( p: OSCPacket, addr: SocketAddress, time: Long ) {
+   private def simulateLocal( p: osc.Packet, addr: SocketAddress, time: osc.Timetag ) {
       p match {
-         case m: OSCMessage => messageReceived( m, addr, time )
-         case b: OSCBundle => b.packets.foreach( simulateLocal( _, addr, b.timetag ))
+         case m: osc.Message => messageReceived( m )
+         case b: osc.Bundle => b.packets.foreach( simulateLocal( _, addr, b.timetag ))
       }
    }
 
-   def simulateBoth( p: OSCPacket ) {
-      if( tracking.isActive ) simulateRemote( p ) else simulateLocal( p )
+   def simulateBoth( p: osc.Packet ) {
+      if( tracking.isConnected ) simulateRemote( p ) else simulateLocal( p )
    }
 
 //   def defeatTracking( defeat: Boolean ) { trackingDefeatedVar = defeat }
-   def trackingConnected = tracking.isActive
+   def trackingConnected = tracking.isConnected
    def trackingConnected_=( connect: Boolean ) {
       if( connect ) {
-         if( !tracking.isActive ) {
-            tracking.start
-            tracking ! OSCMessage( "/notify", 1 )
+         if( !tracking.isConnected ) {
+            tracking.connect()
+            tracking ! osc.Message( "/notify", 1 )
          }
       } else {
-         if( tracking.isActive ) {
-            tracking ! OSCMessage( "/notify", 0 )
-            tracking.stop
+         if( tracking.isConnected ) {
+            tracking ! osc.Message( "/notify", 0 )
+            tracking.close()
          }
       }
    }
 
-   def dumpOSC( mode: Int ) { tracking.dumpIncomingOSC( mode )}
+   def dumpOSC( mode: osc.Dump ) { tracking.dumpIn( mode )}
 
-   private def messageReceived( msg: OSCMessage, addr: SocketAddress, time: Long ) {
-      if( trackingDefeated && (addr != trackingLocalAddr) ) {
-         println( "defeated : " + addr + " != " + trackingLocalAddr )
-         return
-      }
-      msg match {
+   private def messageReceived( p: osc.Packet ) {
+//      if( trackingDefeated && (addr != trackingLocalAddr) ) {
+//         println( "defeated : " + addr + " != " + trackingLocalAddr )
+//         return
+//      }
+      p match {
 //         case t: OSCTrackingMessage => {
 //            stageChange( Some( t.state / 8.0 ))
 //            if( vis != null ) vis.update( t )
@@ -224,12 +228,16 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
       // --> http://scala-programming-language.1934581.n4.nabble.com/Scala-Actors-Starvation-td2281657.html
       System.setProperty( "actors.enableForkJoin", "false" )
 
-      val sif  = new ScalaInterpreterFrame( support /* ntp */ )
-      val ssp  = new ServerStatusPanel()
+      val sifC = InterpreterFrame.SettingsBuilder()
+      sifC.bindings :+= NamedParam[ REPLSupport ]( "support", support )
+      sifC.imports  ++= IndexedSeq( "support._", "de.sciss.cupola._", "Cupola._" )
+
+      val sif  = InterpreterFrame() // new ScalaInterpreterFrame( support /* ntp */ )
+      val ssp  = new JServerStatusPanel()
       val sspw = ssp.makeWindow
-      val ntpo: Option[ NodeTreePanel ] = if( NODE_TREE_PANEL ) {
-         val ntp = new NodeTreePanel()
-         val ntpw = ntp.makeWindow
+      val ntpo: Option[ JNodeTreePanel ] = if( NODE_TREE_PANEL ) {
+         val ntp = new JNodeTreePanel()
+         val ntpw = ntp.makeWindow( disposeOnClose = false )
          ntpw.setLocation( sspw.getX, sspw.getY + sspw.getHeight + 32 )
          ntpw.setVisible( true )
          Some( ntp )
@@ -237,25 +245,25 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
       sspw.setVisible( true )
       sif.setLocation( sspw.getX + sspw.getWidth + 32, sif.getY )
       sif.setVisible( true )
-      booting = Server.boot( options = options ) {
+      booting = Server.boot( config = options ) {
          case ServerConnection.Preparing( srv ) => {
             ssp.server = Some( srv )
-            ntpo.foreach( _.server = Some( srv ))
+            ntpo.foreach( _.group = Some( srv.defaultGroup ))
          }
          case ServerConnection.Running( srv ) => {
             ProcDemiurg.addServer( srv )
             s = srv
             support.s = srv
 
-            if( DUMP_OSC ) s.dumpOSC(1)
+            if( DUMP_OSC ) s.dumpOSC( osc.Dump.Text )
 
             // nuages
-            initNuages
+            initNuages()
             new GUI
             if( SHOW_VIS ) vis = new TrackingVis
          }
       }
-      Runtime.getRuntime.addShutdownHook( new Thread { override def run() { shutDown }})
+      Runtime.getRuntime.addShutdownHook( new Thread { override def run() { shutDown() }})
    }
 
    private def initNuages() {
@@ -285,20 +293,20 @@ object Cupola extends TxnModel[ CupolaUpdate ] {
 
    private def shutDown() { // sync.synchronized { }
       if( (s != null) && (s.condition != Server.Offline) ) {
-         s.quit
+         s.quit()
          s = null
       }
       if( booting != null ) {
-         booting.abort
+         booting.abort()
          booting = null
       }
 //      simulator.dispose
-      if( tracking.isActive ) {
+      if( tracking.isConnected ) {
          try {
-            tracking ! OSCMessage( "/notify", 0 )
-            tracking ! OSCMessage( "/dumpOSC", 0 )
-         } catch { case _ => }
+            tracking ! osc.Message( "/notify", 0 )
+            tracking ! osc.Message( "/dumpOSC", 0 )
+         } catch { case NonFatal( _ ) => }
       }
-      tracking.dispose
+      tracking.close()
     }
 }

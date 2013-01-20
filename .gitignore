@@ -2,9 +2,10 @@ target/
 lib_managed/
 src_managed/
 project/boot/
-out/
-index.html
 style.css
 _creation
 cupola-settings.xml
-.idea/workspace.xml
+.idea
+.idea_modules
+.lib
+*.app

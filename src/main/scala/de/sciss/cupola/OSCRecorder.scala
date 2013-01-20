@@ -2,15 +2,15 @@ package de.sciss.cupola
 
 import java.io.{RandomAccessFile, File}
 import java.nio.ByteBuffer
-import de.sciss.osc.{OSCBundle, OSCPacketCodec, OSCPacket}
+import de.sciss.osc
 
-class OSCRecorder( file: File, codec: OSCPacketCodec ) {
+class OSCRecorder( file: File, codec: osc.PacketCodec ) {
    private val raf   = new RandomAccessFile( file, "rw" )
-   private val ch    = raf.getChannel()
+   private val ch    = raf.getChannel
    private val bb    = ByteBuffer.allocate( 8192 )
    private val sync  = new AnyRef
 
-   def add( p: OSCBundle ) {
+   def add( p: osc.Bundle ) {
       sync.synchronized {
          bb.clear()
          p.encode( codec, bb )
@@ -20,7 +20,7 @@ class OSCRecorder( file: File, codec: OSCPacketCodec ) {
       }
    }
 
-   def close {
+   def close() {
       sync.synchronized { raf.close() }
    }
 }

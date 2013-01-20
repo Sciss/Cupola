@@ -6,8 +6,8 @@ import java.awt.event.{ActionEvent, ActionListener}
 import java.io.File
 import java.util.Date
 import java.text.SimpleDateFormat
-import de.sciss.osc.{OSCBundle, OSCMessage}
 import Cupola._
+import de.sciss.osc
 
 class TrackingVis extends JComponent {
    vis =>
@@ -15,10 +15,10 @@ class TrackingVis extends JComponent {
    private var last = OSCTrackingMessage.empty
    private val f = new JFrame( "Tracking" )
    private val box = Box.createHorizontalBox()
-   private val ggRec = button( "REC", actionRecord )
-   private val ggStop = button( "STOP", actionStop )
-   private val ggPlay = button( "PLAY", actionPlay )
-   private val ggOpen = button( "OPEN", actionOpen )
+   private val ggRec = button( "REC", actionRecord() )
+   private val ggStop = button( "STOP", actionStop() )
+   private val ggPlay = button( "PLAY", actionPlay() )
+   private val ggOpen = button( "OPEN", actionOpen() )
 
    private var fileOption: Option[ File ] = None
    private var recorderOption : Option[ OSCRecorder ] = None
@@ -28,7 +28,7 @@ class TrackingVis extends JComponent {
 
    // ---- constructor ----
    {
-      val cp = f.getContentPane()
+      val cp = f.getContentPane
       vis.setPreferredSize( new Dimension( 400, 400 ))
       cp.add( vis, BorderLayout.CENTER )
       cp.add( box, BorderLayout.SOUTH )
@@ -49,13 +49,13 @@ class TrackingVis extends JComponent {
       b
    }
 
-   def actionPlay {
+   def actionPlay() {
       sync.synchronized {
-         actionStop
+         actionStop()
          fileOption foreach { file =>
             val player = new OSCPlayer( file, OSCTrackingCodec )
             player.action = _ match {
-               case b: OSCBundle=> {
+               case b: osc.Bundle=> {
 //println( "DOING : " + b )
                   b.packets.foreach( Cupola.simulateLocal( _ ))
                }
@@ -70,7 +70,7 @@ class TrackingVis extends JComponent {
       }
    }
 
-   def actionStop {
+   def actionStop() {
       sync.synchronized {
          recorderOption.foreach( _.close )
          recorderOption = None
@@ -86,14 +86,14 @@ class TrackingVis extends JComponent {
       }
    }
 
-   def actionOpen {
+   def actionOpen() {
       sync.synchronized {
-         actionStop
+         actionStop()
          val dlg = new FileDialog( f, "Open OSC File for Playback" )
          dlg.setDirectory( Cupola.OSC_PATH )
          dlg.setVisible( true )
-         val path = dlg.getFile()
-         val dir  = dlg.getDirectory()
+         val path = dlg.getFile
+         val dir  = dlg.getDirectory
          fileOption = if( path == null || dir == null ) {
             None
          } else {
@@ -103,9 +103,9 @@ class TrackingVis extends JComponent {
       }
    }
 
-   def actionRecord {
+   def actionRecord() {
       sync.synchronized {
-         actionStop
+         actionStop()
          val file = new File( OSC_PATH + fs + df.format( new Date() ))
          fileOption = Some( file )
          recorderOption = Some( new OSCRecorder( file, OSCTrackingCodec ))
@@ -119,9 +119,9 @@ class TrackingVis extends JComponent {
    override def paintComponent( g: Graphics ) {
       val msg = last
       g.setColor( Color.black )
-      val w = getWidth(); val h = getHeight()
+      val w = getWidth; val h = getHeight
       val g2 = g.asInstanceOf[ Graphics2D ]
-      val atOrig = g2.getTransform()
+      val atOrig = g2.getTransform
       g.fillRect( 0, 0, w, h )
       g2.translate( 40, 25 )
       g.setColor( Color.green )
@@ -133,8 +133,8 @@ class TrackingVis extends JComponent {
 //      g.fillOval( msg.pupRX - 10, msg.pupRY - 10, 20, 20 )
       g.fillOval( msg.eyeRX + msg.pupRX - 10, msg.eyeRY + msg.pupRY - 10, 20, 20 )
       g.setColor( Color.blue )
-      val ptx = msg.pointX.toInt
-      val pty = msg.pointY.toInt
+      val ptx = msg.pointX
+      val pty = msg.pointY
       g.drawLine( ptx, pty - 20, ptx - 20, pty + 20 )
       g.drawLine( ptx - 20, pty + 20, ptx + 20, pty + 20 )
       g.drawLine( ptx + 20, pty + 20, ptx, pty - 20 )
@@ -144,7 +144,7 @@ class TrackingVis extends JComponent {
    def update( newMsg: OSCTrackingMessage ) {
       sync.synchronized {
          last = newMsg
-         recorderOption.foreach( _.add( OSCBundle.millis( System.currentTimeMillis, newMsg )))
+         recorderOption.foreach( _.add( osc.Bundle.millis( System.currentTimeMillis, newMsg )))
       }
       repaint( 50 )
    }

@@ -2,7 +2,7 @@
  *  IdleProcess.scala
  *  (Cupola)
  *
- *  Copyright (c) 2010 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2010-2013 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -82,7 +82,7 @@ class IdleProcess extends CupolaProcess {
 
       val fname =  name + "-flt"
       val f = (ProcDemiurg.factories.find( _.name == fname ) getOrElse filter( fname ) {
-         graph { in =>
+         graph { in: In =>
             val freq = 1.0 // pfreq.kr
             val tr  = Impulse.kr( freq )
             val trs = PulseDivider.kr( tr, 2, 1 :: 0 :: Nil )

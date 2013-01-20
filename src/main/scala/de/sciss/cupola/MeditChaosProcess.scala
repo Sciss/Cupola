@@ -2,7 +2,7 @@
  *  MeditChaosProcess.scala
  *  (Cupola)
  *
- *  Copyright (c) 2010 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2010-2013 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -28,7 +28,6 @@
 
 package de.sciss.cupola
 
-import Cupola._
 import de.sciss.synth.proc._
 import DSL._
 import java.util.{TimerTask, Timer}
@@ -173,7 +172,7 @@ object MeditChaosProcess {
          }
       }
 
-      def update {
+      def update() {
          ProcTxn.atomic { implicit tx =>
             if( !validRef() ) return
 
@@ -281,7 +280,7 @@ trait MeditChaosProcess extends CupolaDistProcess {
    }
    val inputTask = {
       val res = new TimerTask {
-         def run = inputManager.update
+         def run() { inputManager.update() }
       }
       timer.schedule( res, 1993, 1993 ) // 300th prime
       res
@@ -304,7 +303,7 @@ trait MeditChaosProcess extends CupolaDistProcess {
 
    val filterTask = {
       val res = new TimerTask {
-         def run = filterManager.update
+         def run() { filterManager.update() }
       }
       timer.schedule( res, 2131, 2131 ) // 320th prime
       res
